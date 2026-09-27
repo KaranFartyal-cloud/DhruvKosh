@@ -74,7 +74,7 @@ def gather_item_source_material(item_type: str, item_id: int, db_session) -> str
         pub = db_session.query(Publication).filter(Publication.id == item_id).first()
         if pub:
             sections.append(f"PUBLICATION\nTitle: {pub.title}\nAbstract:\n{pub.abstract or 'N/A'}")
-    elif item_type in ["photo", "video", "media_item"]:
+    elif item_type in ["photo", "video", "media_item", "media"]:
         media = db_session.query(MediaItem).filter(MediaItem.id == item_id).first()
         if media:
             sections.append(f"MEDIA\nTitle: {media.title}\nDescription:\n{media.description or 'N/A'}")
@@ -283,7 +283,7 @@ async def generate_bilingual_content_for_item(item_type: str, item_id: int, db_s
         obj = db_session.query(ScientificDataset).filter(ScientificDataset.id == item_id).first()
     elif item_type == "publication":
         obj = db_session.query(Publication).filter(Publication.id == item_id).first()
-    elif item_type in ["photo", "video", "media_item"]:
+    elif item_type in ["photo", "video", "media_item", "media"]:
         obj = db_session.query(MediaItem).filter(MediaItem.id == item_id).first()
         if obj: media_items = [obj] # Treat the item itself as the suggested media
     else:

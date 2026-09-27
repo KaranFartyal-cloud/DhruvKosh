@@ -17,7 +17,7 @@ async def generate_content_for_item(
 ):
     """Generate all content types for a standalone item (report, publication, dataset, photo, video)."""
     
-    if item_type not in ["report", "publication", "dataset", "photo", "video", "media_item"]:
+    if item_type not in ["report", "publication", "dataset", "photo", "video", "media_item", "media"]:
         raise HTTPException(status_code=400, detail="Invalid item type")
         
     try:
