@@ -416,7 +416,7 @@ const ContentDetail = () => {
           {!postsByPlatform[activeTab] && (
             <div className="text-center py-16 text-ncpor-secondary border border-dashed border-ncpor-divider rounded-xl bg-ncpor-bg/20">
               <div className="text-4xl mb-4 opacity-50">🤖</div>
-              <p className="text-lg">No content generated for {platform.charAt(0).toUpperCase() + platform.slice(1)} yet.</p>
+              <p className="text-lg">No content generated for {activeTab ? activeTab.charAt(0).toUpperCase() + activeTab.slice(1) : ''} yet.</p>
               <p className="text-sm mt-2 opacity-70">Click 'Generate Content' to create an AI draft.</p>
             </div>
           )}
