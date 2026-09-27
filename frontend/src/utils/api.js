@@ -309,7 +309,7 @@ export const contentAPI = {
   },
 
   getById: async (compositeId) => {
-    // compositeId is like "report-5", "dataset-2", "publication-3"
+    // compositeId is like "report-5", "dataset-2", "publication-3", "media-7"
     if (!compositeId) return { data: null };
     const [type, rawId] = String(compositeId).split('-');
     const id = parseInt(rawId);
@@ -333,6 +333,21 @@ export const contentAPI = {
       if (type === 'publication') {
         const res = await api.get(API_CONFIG.endpoints.publicationById(id));
         return { data: normalisePublication(res.data) };
+      }
+      if (type === 'media') {
+        // Fetch media item directly via /api/expeditions/{id}
+        const res = await api.get(`/api/expeditions/${id}`);
+        // To properly normalise, we ideally need the expedition context. 
+        // For now, pass a dummy standalone expedition object if we can't fetch it easily.
+        // Actually, we can fetch the expedition using media's expedition_id if needed.
+        let exp = { expedition_code: 'Standalone', region: 'general' };
+        if (res.data.expedition_id) {
+            try {
+                const expRes = await api.get(API_CONFIG.endpoints.expeditionFull(res.data.expedition_id));
+                exp = expRes.data || exp;
+            } catch(e) {}
+        }
+        return { data: normaliseMedia(res.data, exp) };
       }
       return { data: null };
     } catch (e) {
