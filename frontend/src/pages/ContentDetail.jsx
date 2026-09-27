@@ -216,11 +216,24 @@ const ContentDetail = () => {
     );
   }
   
-  const platforms = ['twitter', 'instagram', 'linkedin', 'website'];
   const postsByPlatform = {};
+  const platforms = [];
   content.generated_posts?.forEach(post => {
     postsByPlatform[post.platform] = post;
+    if (!platforms.includes(post.platform)) {
+      platforms.push(post.platform);
+    }
   });
+  if (platforms.length === 0) {
+    platforms.push('twitter', 'instagram', 'linkedin', 'website');
+  }
+  
+  // Ensure active tab exists
+  useEffect(() => {
+    if (platforms.length > 0 && !platforms.includes(activeTab)) {
+      setActiveTab(platforms[0]);
+    }
+  }, [platforms, activeTab]);
   
   const getCategoryColor = (cat) => {
     return 'bg-ncpor-divider text-ncpor-primary border border-ncpor-divider';

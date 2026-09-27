@@ -495,23 +495,58 @@ export const contentAPI = {
 
     const res = await api.post(API_CONFIG.endpoints.generateContent(expeditionId));
     // Backend returns { social_posts, website_article, educational_explainer, quiz }
-    // Map to the array of posts format the UI expects
     const generated = res.data;
     const posts = [];
     let pid = 1;
-    if (generated.social_posts) {
-      Object.entries(generated.social_posts).forEach(([platform, text]) => {
-        if (text && !text.startsWith('Error')) {
-          posts.push({ id: pid++, platform, generated_text: text, status: 'draft' });
-        }
-      });
+
+    // Handle both old flat format and new bilingual format
+    const processLangContent = (langContent, langLabel = '') => {
+      if (!langContent) return;
+      
+      const suffix = langLabel ? ` (${langLabel})` : '';
+      
+      if (langContent.social_posts) {
+        Object.entries(langContent.social_posts).forEach(([platform, data]) => {
+          const text = typeof data === 'string' ? data : (data.text || '');
+          if (text && !text.startsWith('Error')) {
+            posts.push({ 
+              id: pid++, 
+              platform: platform + (langLabel ? `-${langLabel}` : ''), 
+              generated_text: text, 
+              status: 'draft' 
+            });
+          }
+        });
+      }
+      if (langContent.website_article?.body) {
+        posts.push({ 
+          id: pid++, 
+          platform: 'website' + (langLabel ? `-${langLabel}` : ''), 
+          generated_text: langContent.website_article.body, 
+          status: 'draft', 
+          title: langContent.website_article.headline 
+        });
+      }
+      if (langContent.educational_explainer?.explainer_text) {
+        posts.push({ 
+          id: pid++, 
+          platform: 'educational' + (langLabel ? `-${langLabel}` : ''), 
+          generated_text: langContent.educational_explainer.explainer_text, 
+          status: 'draft', 
+          title: langContent.educational_explainer.title 
+        });
+      }
+    };
+
+    if (generated.en || generated.hi) {
+      // New bilingual format
+      if (generated.en) processLangContent(generated.en, 'en');
+      if (generated.hi) processLangContent(generated.hi, 'hi');
+    } else {
+      // Fallback for old format
+      processLangContent(generated);
     }
-    if (generated.website_article?.body) {
-      posts.push({ id: pid++, platform: 'website', generated_text: generated.website_article.body, status: 'draft', title: generated.website_article.headline });
-    }
-    if (generated.educational_explainer?.explainer_text) {
-      posts.push({ id: pid++, platform: 'educational', generated_text: generated.educational_explainer.explainer_text, status: 'draft', title: generated.educational_explainer.title });
-    }
+
     return { data: posts, _raw: generated };
   },
 
