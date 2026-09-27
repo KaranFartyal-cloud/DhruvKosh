@@ -1,11 +1,19 @@
-from groq import Groq
 import os
 import asyncio
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import logging
+import json
+from groq import Groq
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def truncate_words(text: str, max_words: int = 500) -> str:
+    if not text: return ""
+    words = text.split()
+    if len(words) <= max_words:
+        return text
+    return " ".join(words[:max_words]) + "... [TRUNCATED]"
 
 def gather_source_material(expedition_id: int, db_session) -> str:
     """Gather all related content for an expedition into a structured text block."""
@@ -17,7 +25,6 @@ def gather_source_material(expedition_id: int, db_session) -> str:
     
     sections = []
     
-    # Expedition Info
     expedition_info = f"""EXPEDITION INFO
 Name: {expedition.name}
 Code: {expedition.expedition_code}
@@ -29,295 +36,255 @@ Summary: {expedition.summary or 'No summary available'}
 """
     sections.append(expedition_info)
     
-    # Reports
     reports = db_session.query(ExpeditionReport).filter(ExpeditionReport.expedition_id == expedition_id).all()
     if reports:
         report_section = "\nREPORT EXCERPTS\n"
         for report in reports:
-            if report.extracted_text:
-                # Truncate to ~500 words per report
-                words = report.extracted_text.split()
-                truncated = " ".join(words[:500])
-                report_section += f"\n{report.title} ({report.report_type.value}):\n{truncated}\n"
+            if not report.extracted_text or report.extracted_text.strip() == "":
+                report_section += f"\n- {report.title} ({report.report_type.value}): Report text unavailable.\n"
+            else:
+                truncated = truncate_words(report.extracted_text, 600)
+                report_section += f"\n- {report.title} ({report.report_type.value}):\n{truncated}\n"
         sections.append(report_section)
+    else:
+        sections.append("\nREPORT EXCERPTS\nNo reports currently archived for this expedition.")
     
-    # Datasets
     datasets = db_session.query(ScientificDataset).filter(ScientificDataset.expedition_id == expedition_id).all()
     if datasets:
         dataset_section = "\nDATASETS\n"
         for dataset in datasets:
             params = ", ".join(dataset.parameters_measured) if dataset.parameters_measured else "N/A"
-            dataset_section += f"\n{dataset.title}\nType: {dataset.data_type.value}\nParameters: {params}\nDescription: {dataset.description or 'N/A'}\n"
+            dataset_section += f"\n- {dataset.title}\nType: {dataset.data_type.value}\nParameters: {params}\nDescription: {dataset.description or 'N/A'}\n"
         sections.append(dataset_section)
+    else:
+        sections.append("\nDATASETS\nNo datasets currently archived for this expedition.")
     
-    # Publications
     publications = db_session.query(Publication).filter(Publication.expedition_id == expedition_id).all()
     if publications:
         pub_section = "\nPUBLICATIONS\n"
         for pub in publications:
             authors = ", ".join(pub.authors) if pub.authors else "N/A"
-            pub_section += f"\n{pub.title}\nAuthors: {authors}\nJournal: {pub.journal_or_venue or 'N/A'}\nAbstract: {pub.abstract or 'N/A'}\n"
+            pub_section += f"\n- {pub.title}\nAuthors: {authors}\nJournal: {pub.journal_or_venue or 'N/A'}\nAbstract: {pub.abstract or 'N/A'}\n"
         sections.append(pub_section)
+    else:
+        sections.append("\nPUBLICATIONS\nNo publications currently archived for this expedition.")
     
-    # Media
     media_items = db_session.query(MediaItem).filter(MediaItem.expedition_id == expedition_id).all()
     if media_items:
         media_section = "\nMEDIA DESCRIPTIONS\n"
         for media in media_items:
-            media_section += f"\n{media.title} ({media.media_type.value})\nDescription: {media.description or 'N/A'}\nLocation: {media.location_description or 'N/A'}\n"
+            media_section += f"\n- {media.title} ({media.media_type.value})\nDescription: {media.description or 'N/A'}\nLocation: {media.location_description or 'N/A'}\n"
         sections.append(media_section)
+    else:
+        sections.append("\nMEDIA DESCRIPTIONS\nNo media currently archived for this expedition.")
     
-    # Combine and truncate total to ~4000 words
     full_text = "\n".join(sections)
-    words = full_text.split()
-    if len(words) > 4000:
-        full_text = " ".join(words[:4000])
+    return truncate_words(full_text, 4000)
+
+ANTI_HALLUCINATION_INSTRUCTION = """
+You must ONLY state facts that appear in the provided source material below. Do not invent dates, locations, findings, names, or statistics. If the source material lacks a specific detail (e.g. exact team size, precise findings), write around it generally rather than making up a specific-sounding but false detail. If asked to write about something with genuinely no relevant source material, explicitly generate a shorter, more general piece rather than fabricating specifics to fill length.
+"""
+
+def validate_grounding(generated_text: str, source_material: str, expedition_name: str, is_social: bool = False, max_len: int = None) -> Tuple[bool, str]:
+    if not generated_text:
+        return False, "Empty generated text"
+        
+    text_lower = generated_text.lower()
     
-    return full_text
+    if is_social and max_len:
+        if len(generated_text) > max_len:
+            return False, f"Exceeded length limit ({len(generated_text)} > {max_len})"
+            
+    if not is_social:
+        sig_words = [w.lower() for w in expedition_name.split() if len(w) > 3 and w.lower() not in ['indian', 'expedition', 'the', 'and']]
+        if sig_words:
+            found_any = any(w in text_lower for w in sig_words)
+            if not found_any and expedition_name.lower() not in text_lower:
+                return False, f"Expedition name/keywords not found in long-form text"
+                
+    return True, "Passed validation"
+
+def call_groq_with_retry(messages: list, max_tokens: int = 2000, temperature: float = 0.7, retries: int = 1) -> str:
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    last_error = None
+    import time
+    for attempt in range(retries + 1):
+        try:
+            response = client.chat.completions.create(
+                model="openai/gpt-oss-120b",
+                max_tokens=max_tokens,
+                messages=messages,
+                temperature=temperature
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            last_error = e
+            time.sleep(2)
+    raise last_error
+
+def _extract_json(content: str) -> dict | list:
+    if "```json" in content:
+        content = content.split("```json")[1].split("```")[0]
+    elif "```" in content:
+        content = content.split("```")[1].split("```")[0]
+    return json.loads(content.strip())
 
 def generate_social_post(source_material: str, expedition_name: str, platform: str) -> str:
     """Generate social media post for a specific platform."""
-    
-    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-    
     platform_prompts = {
-        "twitter": """You are a social media manager for NCPOR (National Centre for Polar and Ocean Research), an Indian government polar research institute under the Ministry of Earth Sciences.
-
-Generate a Twitter post (max 280 characters) about the provided expedition content. Requirements:
+        "twitter": f"""You are a social media manager for NCPOR.
+Generate a Twitter post (max 280 characters) about the provided expedition.
+{ANTI_HALLUCINATION_INSTRUCTION}
+Requirements:
 - Punchy and engaging
-- 2-3 relevant hashtags (e.g., #PolarScience #NCPOR #IndianAntarcticExpedition)
+- 2-3 relevant hashtags
 - No jargon
-- Use ONLY facts present in the provided source material
-- Do not invent expedition details, dates, locations, or findings
-- If source material is limited, keep the post general rather than fabricating specifics
-
 Return ONLY the post text, no preamble.""",
-        
-        "instagram": """You are a social media manager for NCPOR (National Centre for Polar and Ocean Research), an Indian government polar research institute.
-
-Generate an Instagram post about the provided expedition content. Requirements:
+        "instagram": f"""You are a social media manager for NCPOR.
+Generate an Instagram post about the provided expedition.
+{ANTI_HALLUCINATION_INSTRUCTION}
+Requirements:
 - Casual, friendly tone
 - 1-2 emojis allowed
 - 2-3 sentences
-- 4-5 hashtags at the end
-- Use ONLY facts present in the provided source material
-- Do not invent expedition details, dates, locations, or findings
-- If source material is limited, keep the post general rather than fabricating specifics
-
+- 4-5 hashtags
 Return ONLY the post text, no preamble.""",
-        
-        "linkedin": """You are a communications officer for NCPOR (National Centre for Polar and Ocean Research), an Indian government polar research institute.
-
-Generate a LinkedIn post about the provided expedition content. Requirements:
+        "linkedin": f"""You are a communications officer for NCPOR.
+Generate a LinkedIn post about the provided expedition.
+{ANTI_HALLUCINATION_INSTRUCTION}
+Requirements:
 - Professional, authoritative tone
 - 3-4 sentences
 - Position NCPOR's institutional credibility
-- 1-2 hashtags maximum
 - No emojis
-- Use ONLY facts present in the provided source material
-- Do not invent expedition details, dates, locations, or findings
-- If source material is limited, keep the post general rather than fabricating specifics
-
 Return ONLY the post text, no preamble."""
     }
     
-    max_tokens = {
-        "twitter": 100,
-        "instagram": 200,
-        "linkedin": 300
-    }
+    max_tokens_map = {"twitter": 100, "instagram": 200, "linkedin": 300}
+    max_lens = {"twitter": 280, "instagram": 2200, "linkedin": 3000}
     
     system_prompt = platform_prompts.get(platform, platform_prompts["twitter"])
-    
-    user_message = f"""Expedition: {expedition_name}
-
-Source Material:
-{source_material}
-
-Generate the {platform} post."""
+    user_message = f"Expedition: {expedition_name}\n\nSource Material:\n{source_material}\n\nGenerate the {platform} post."
     
     try:
-        response = client.chat.completions.create(
-            model="openai/gpt-oss-120b",
-            max_tokens=max_tokens.get(platform, 200),
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ],
-            temperature=0.7
-        )
+        content = call_groq_with_retry([
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
+        ], max_tokens=max_tokens_map.get(platform, 200))
         
-        generated_text = response.choices[0].message.content.strip()
-        
-        # Remove any preamble
-        if ":" in generated_text and len(generated_text.split(":")[0]) < 50:
+        generated_text = content.strip()
+        if ":" in generated_text and len(generated_text.split(":")[0]) < 20:
             generated_text = generated_text.split(":", 1)[1].strip()
-        
+            
+        is_valid, reason = validate_grounding(generated_text, source_material, expedition_name, is_social=True, max_len=max_lens.get(platform))
+        if not is_valid:
+            # Retry once with stricter length requirement for Twitter
+            if platform == "twitter" and "length" in reason:
+                content = call_groq_with_retry([
+                    {"role": "system", "content": system_prompt + "\nSTRICT LIMIT: MUST BE UNDER 280 CHARS."},
+                    {"role": "user", "content": user_message}
+                ], max_tokens=100)
+                generated_text = content.strip()
+                is_valid2, _ = validate_grounding(generated_text, source_material, expedition_name, is_social=True, max_len=280)
+                if not is_valid2:
+                    return f"[LOW CONFIDENCE - Needs Editing] {generated_text}"
+            else:
+                return f"[LOW CONFIDENCE - {reason}] {generated_text}"
+                
         return generated_text
     except Exception as e:
         logger.error(f"Failed to generate {platform} post: {str(e)}")
-        return f"Error generating {platform} post: {str(e)}"
+        raise e
 
 def generate_website_article(source_material: str, expedition_name: str) -> Dict:
-    """Generate a website article for NCPOR's news section."""
-    
-    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-    
-    system_prompt = """You are a science communications writer for NCPOR (National Centre for Polar and Ocean Research), an Indian government polar research institute under the Ministry of Earth Sciences.
-
-Generate a website news article about the provided expedition content. Requirements:
-- Third-person, journalistic tone suitable for a government science website
+    system_prompt = f"""You are a science communications writer for NCPOR.
+Generate a website news article about the provided expedition.
+{ANTI_HALLUCINATION_INSTRUCTION}
+Requirements:
+- Third-person, journalistic tone
 - 250-400 words
-- Return as JSON with these exact keys: "headline", "subheading", "body", "suggested_tags"
-- Structure: strong opening paragraph (what/where/why this matters), then details from findings, then closing about NCPOR's broader mission
-- Use ONLY facts present in the provided source material
-- Do not invent expedition details, dates, locations, or findings
-- Should read like something that could genuinely appear on ncpor.gov.in
-- suggested_tags should be 3-5 relevant hashtags for the website
-
+- Structure: strong opening paragraph, details from findings, closing about broader mission
+- Return as JSON with keys: "headline", "subheading", "body", "suggested_tags" (3-5 items array)
 Return ONLY valid JSON, no preamble."""
 
-    user_message = f"""Expedition: {expedition_name}
-
-Source Material:
-{source_material}
-
-Generate a website article in JSON format with headline, subheading, body, and suggested_tags."""
-
+    user_message = f"Expedition: {expedition_name}\n\nSource Material:\n{source_material}\n\nGenerate a website article in JSON format."
     try:
-        response = client.chat.completions.create(
-            model="openai/gpt-oss-120b",
-            max_tokens=2000,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ],
-            temperature=0.7
-        )
+        content = call_groq_with_retry([
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
+        ], max_tokens=2000)
         
-        import json
-        content = response.choices[0].message.content
-        if "```json" in content:
-            content = content.split("```json")[1].split("```")[0]
-        elif "```" in content:
-            content = content.split("```")[1].split("```")[0]
-        result = json.loads(content.strip())
+        result = _extract_json(content)
+        
+        body_text = result.get("body", "")
+        is_valid, reason = validate_grounding(body_text, source_material, expedition_name, is_social=False)
+        if not is_valid:
+            result["low_confidence"] = True
+            result["validation_warning"] = reason
+            
         return result
     except Exception as e:
-        logger.error(f"Failed to generate website article: {str(e)}")
-        return {
-            "headline": "Error generating article",
-            "subheading": "Please try again",
-            "body": f"Error: {str(e)}",
-            "suggested_tags": []
-        }
+        logger.error(f"Failed to generate article: {str(e)}")
+        raise e
 
 def generate_educational_explainer(source_material: str, expedition_name: str, audience_level: str) -> Dict:
-    """Generate an educational explainer for students or general public."""
-    
-    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-    
     audience_instructions = {
-        "school": "Age 12-16, simple language, use analogies, wonder/curiosity tone, explain WHY this matters for people in India",
-        "general_public": "Adult layperson, still accessible but more nuanced, explain the broader significance"
+        "school": "Age 12-16, simple language, use analogies, wonder/curiosity tone",
+        "general_public": "Adult layperson, accessible but more nuanced"
     }
-    
-    system_prompt = f"""You are an educator for NCPOR (National Centre for Polar and Ocean Research), creating educational content about polar science.
-
-Generate an educational explainer about the provided expedition content. Requirements:
+    system_prompt = f"""You are an educator for NCPOR.
+Generate an educational explainer about the provided expedition.
+{ANTI_HALLUCINATION_INSTRUCTION}
+Requirements:
 - Target audience: {audience_instructions.get(audience_level, audience_instructions['general_public'])}
-- Return as JSON with these exact keys: "title", "explainer_text", "glossary", "fun_fact"
-- explainer_text should explain WHY this research matters in plain language
-- glossary should pull out 3-5 technical terms actually present in the source material and define them simply
-- fun_fact should be one interesting fact from the source material
-- Use ONLY facts present in the provided source material
-- Do not invent expedition details, dates, locations, or findings
-- This directly serves the "Smart Education" theme - make it engaging and accessible
-
+- Return as JSON with keys: "title", "explainer_text", "glossary" (array of {{"term": "...", "definition": "..."}}), "fun_fact"
+- Glossary must ONLY use terms actually in the source material.
 Return ONLY valid JSON, no preamble."""
 
-    user_message = f"""Expedition: {expedition_name}
-Audience Level: {audience_level}
-
-Source Material:
-{source_material}
-
-Generate an educational explainer in JSON format with title, explainer_text, glossary (array of {{"term": "...", "definition": "..."}}), and fun_fact."""
-
+    user_message = f"Expedition: {expedition_name}\nAudience Level: {audience_level}\n\nSource Material:\n{source_material}\n\nGenerate explainer in JSON format."
     try:
-        response = client.chat.completions.create(
-            model="openai/gpt-oss-120b",
-            max_tokens=2000,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ],
-            temperature=0.7
-        )
+        content = call_groq_with_retry([
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
+        ], max_tokens=2000)
         
-        import json
-        content = response.choices[0].message.content
-        if "```json" in content:
-            content = content.split("```json")[1].split("```")[0]
-        elif "```" in content:
-            content = content.split("```")[1].split("```")[0]
-        result = json.loads(content.strip())
+        result = _extract_json(content)
+        
+        body_text = result.get("explainer_text", "")
+        is_valid, reason = validate_grounding(body_text, source_material, expedition_name, is_social=False)
+        if not is_valid:
+            result["low_confidence"] = True
+            result["validation_warning"] = reason
+            
         return result
     except Exception as e:
-        logger.error(f"Failed to generate educational explainer: {str(e)}")
-        return {
-            "title": "Error generating explainer",
-            "explainer_text": f"Error: {str(e)}",
-            "glossary": [],
-            "fun_fact": "Please try again"
-        }
+        logger.error(f"Failed to generate explainer: {str(e)}")
+        raise e
 
 def generate_quiz_from_content(source_material: str) -> List[Dict]:
-    """Generate multiple-choice quiz questions based on the content."""
-    
-    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-    
-    system_prompt = """You are an educator creating quiz content for NCPOR's polar science education program.
-
-Generate 3 multiple-choice quiz questions based on facts in the provided source material. Requirements:
-- Each question should have 4 options
-- Return as JSON array with these exact keys per question: "question", "options" (array of 4 strings), "correct_index" (0-3), "explanation"
-- Questions should test understanding of key facts from the source material
-- Use ONLY facts present in the provided source material
-- Do not invent details not in the source
-- Make questions educational but not overly difficult
-
+    system_prompt = f"""You are an educator creating a quiz for NCPOR.
+Generate UP TO 3 multiple-choice quiz questions based on facts in the source material.
+If the source material is very thin, generate fewer questions (even just 1) rather than making up unanswerable questions.
+{ANTI_HALLUCINATION_INSTRUCTION}
+Requirements:
+- 4 options per question
+- Return as JSON array of objects with keys: "question", "options" (array of 4), "correct_index" (0-3), "explanation"
 Return ONLY valid JSON array, no preamble."""
 
-    user_message = f"""Source Material:
-{source_material}
-
-Generate 3 multiple-choice quiz questions in JSON array format."""
-
+    user_message = f"Source Material:\n{source_material}\n\nGenerate quiz questions in JSON array format."
     try:
-        response = client.chat.completions.create(
-            model="openai/gpt-oss-120b",
-            max_tokens=2000,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ],
-            temperature=0.7
-        )
+        content = call_groq_with_retry([
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
+        ], max_tokens=2000)
         
-        import json
-        content = response.choices[0].message.content
-        if "```json" in content:
-            content = content.split("```json")[1].split("```")[0]
-        elif "```" in content:
-            content = content.split("```")[1].split("```")[0]
-        result = json.loads(content.strip())
+        result = _extract_json(content)
         return result if isinstance(result, list) else result.get("questions", [])
     except Exception as e:
         logger.error(f"Failed to generate quiz: {str(e)}")
-        return []
+        raise e
 
-async def _run_with_timeout(coro, timeout=30):
+async def _run_with_timeout(coro, timeout=45):
     try:
         return await asyncio.wait_for(coro, timeout)
     except asyncio.TimeoutError:
@@ -326,24 +293,17 @@ async def _run_with_timeout(coro, timeout=30):
         return Exception(str(e))
 
 async def generate_all_content(expedition_id: int, db_session) -> Dict:
-    """Orchestrate all content generation concurrently."""
-    
-    # Gather source material once
     source_material = gather_source_material(expedition_id, db_session)
-    
     if not source_material:
         return {"error": "No source material found for this expedition"}
         
-    # Log the source material for transparency/debugging
     with open(f"source_material_{expedition_id}.log", "w", encoding="utf-8") as f:
         f.write(source_material)
-    
-    # Get expedition name
+        
     from app.models import Expedition
     expedition = db_session.query(Expedition).filter(Expedition.id == expedition_id).first()
     expedition_name = expedition.name if expedition else "Unknown Expedition"
     
-    # Run all generations concurrently
     tasks = [
         _run_with_timeout(asyncio.to_thread(generate_social_post, source_material, expedition_name, "twitter")),
         _run_with_timeout(asyncio.to_thread(generate_social_post, source_material, expedition_name, "instagram")),
@@ -355,16 +315,17 @@ async def generate_all_content(expedition_id: int, db_session) -> Dict:
     
     results = await asyncio.gather(*tasks, return_exceptions=True)
     
-    generation_errors = []
+    generation_errors = {}
     for i, r in enumerate(results):
         if isinstance(r, Exception):
-            generation_errors.append(f"Task {i} failed: {str(r)}")
+            names = ["twitter", "instagram", "linkedin", "website_article", "educational_explainer", "quiz"]
+            generation_errors[names[i]] = str(r)
             
     response = {
         "social_posts": {
-            "twitter": results[0] if not isinstance(results[0], Exception) else "Error: " + str(results[0]),
-            "instagram": results[1] if not isinstance(results[1], Exception) else "Error: " + str(results[1]),
-            "linkedin": results[2] if not isinstance(results[2], Exception) else "Error: " + str(results[2])
+            "twitter": results[0] if not isinstance(results[0], Exception) else f"Error: {str(results[0])}",
+            "instagram": results[1] if not isinstance(results[1], Exception) else f"Error: {str(results[1])}",
+            "linkedin": results[2] if not isinstance(results[2], Exception) else f"Error: {str(results[2])}"
         },
         "website_article": results[3] if not isinstance(results[3], Exception) else {"error": str(results[3])},
         "educational_explainer": results[4] if not isinstance(results[4], Exception) else {"error": str(results[4])},
