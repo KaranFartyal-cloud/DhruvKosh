@@ -111,7 +111,7 @@ def call_groq_with_retry(messages: list, max_tokens: int = 2000, temperature: fl
     for attempt in range(retries + 1):
         try:
             response = client.chat.completions.create(
-                model="openai/gpt-oss-120b",
+                model="llama3-70b-8192",
                 max_tokens=max_tokens,
                 messages=messages,
                 temperature=temperature
