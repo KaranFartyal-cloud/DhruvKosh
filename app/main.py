@@ -7,7 +7,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from fastapi.responses import JSONResponse
+import traceback
+
 app = FastAPI(title="NCPOR Polar Science Outreach Portal")
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=500,
+        content={"message": "Internal Server Error", "details": str(exc), "trace": traceback.format_exc()}
+    )
 
 # CORS enabled for all origins (hackathon demo)
 app.add_middleware(
