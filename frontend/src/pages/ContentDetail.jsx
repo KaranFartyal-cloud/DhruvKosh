@@ -85,6 +85,14 @@ const ContentDetail = () => {
     }
   };
   
+  useEffect(() => {
+    if (!content?.generated_posts) return;
+    const availablePlatforms = Array.from(new Set(content.generated_posts.map(p => p.platform)));
+    if (availablePlatforms.length > 0 && !availablePlatforms.includes(activeTab)) {
+      setActiveTab(availablePlatforms[0]);
+    }
+  }, [content?.generated_posts, activeTab]);
+
   const renderFilePreview = () => {
     if (!content) return null;
     
@@ -227,13 +235,6 @@ const ContentDetail = () => {
   if (platforms.length === 0) {
     platforms.push('twitter', 'instagram', 'linkedin', 'website');
   }
-  
-  // Ensure active tab exists
-  useEffect(() => {
-    if (platforms.length > 0 && !platforms.includes(activeTab)) {
-      setActiveTab(platforms[0]);
-    }
-  }, [platforms, activeTab]);
   
   const getCategoryColor = (cat) => {
     return 'bg-ncpor-divider text-ncpor-primary border border-ncpor-divider';
