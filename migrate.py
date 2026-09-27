@@ -4,6 +4,6 @@ from app.database import engine
 from sqlalchemy import text
 
 with engine.connect() as conn:
-    conn.execute(text("ALTER TABLE generated_content ADD COLUMN IF NOT EXISTS language VARCHAR DEFAULT 'en'"))
+    conn.execute(text("ALTER TABLE generated_content ADD COLUMN IF NOT EXISTS suggested_media_id INTEGER"))
     conn.commit()
     print("Migration complete.")
