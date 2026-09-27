@@ -42,7 +42,7 @@ async def generate_content_for_item(
                     expedition_id=None, # Standalone
                     source_type=item_type,
                     source_id=item_id,
-                    content_type=ContentCategory.social_post,
+                    content_category=ContentCategory.social_post,
                     platform=Platform(platform_name),
                     language=lang,
                     generated_text=post_data.get("text", ""),
@@ -59,12 +59,11 @@ async def generate_content_for_item(
                 expedition_id=None,
                 source_type=item_type,
                 source_id=item_id,
-                content_type=ContentCategory.website_article,
+                content_category=ContentCategory.website_article,
                 language=lang,
                 generated_text=f"{article.get('headline', '')}\n\n{article.get('subheading', '')}\n\n{article.get('body', '')}",
                 status=GeneratedStatus.draft,
-                suggested_media_id=article.get("suggested_media_id"),
-                metadata_json={"tags": article.get("suggested_tags", [])}
+                suggested_media_id=article.get("suggested_media_id")
             )
             db.add(content)
             saved_content.append(content)
@@ -76,12 +75,11 @@ async def generate_content_for_item(
                 expedition_id=None,
                 source_type=item_type,
                 source_id=item_id,
-                content_type=ContentCategory.educational_explainer,
+                content_category=ContentCategory.educational_explainer,
                 language=lang,
                 generated_text=f"{edu.get('title', '')}\n\n{edu.get('explainer_text', '')}\n\nFun Fact: {edu.get('fun_fact', '')}",
                 status=GeneratedStatus.draft,
-                suggested_media_id=edu.get("suggested_media_id"),
-                metadata_json={"glossary": edu.get("glossary", [])}
+                suggested_media_id=edu.get("suggested_media_id")
             )
             db.add(content)
             saved_content.append(content)
@@ -93,11 +91,10 @@ async def generate_content_for_item(
                 expedition_id=None,
                 source_type=item_type,
                 source_id=item_id,
-                content_type=ContentCategory.educational_explainer,
+                content_category=ContentCategory.educational_explainer,
                 language=lang,
                 generated_text="Quiz generated (see metadata)",
-                status=GeneratedStatus.draft,
-                metadata_json={"questions": quiz}
+                status=GeneratedStatus.draft
             )
             db.add(content)
             saved_content.append(content)
