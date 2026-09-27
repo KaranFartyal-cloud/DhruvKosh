@@ -30,8 +30,8 @@ const PublicContentDetail = () => {
     fetchContent();
   }, [id]);
 
-  if (loading) return <div className="text-center p-20"><div className="animate-spin h-10 w-10 border-4 border-ocean-600 border-t-transparent rounded-full mx-auto"></div></div>;
-  if (error || !content) return <div className="text-center p-20 text-red-500">{error || "Not found"}</div>;
+  if (loading) return <div className="text-center p-20"><div className="animate-spin h-10 w-10 border-4 border-ncpor-accent border-t-transparent rounded-full mx-auto"></div></div>;
+  if (error || !content) return <div className="text-center p-20 text-ncpor-warning bg-ncpor-warning/10 border border-ncpor-warning/20 max-w-lg mx-auto rounded-xl mt-12">{error || "Not found"}</div>;
 
   let parsedContent;
   try {
@@ -45,35 +45,35 @@ const PublicContentDetail = () => {
   const isQuiz = content.content_category === 'quiz';
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-        <Link to="/" className="flex items-center text-sm font-medium text-ocean-600 hover:text-ocean-800">
-          <ArrowLeft className="h-4 w-4 mr-1" /> Back to Home
+    <div className="max-w-4xl mx-auto bg-ncpor-card rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-ncpor-border overflow-hidden font-sans">
+      <div className="p-5 border-b border-ncpor-border flex items-center justify-between bg-ncpor-bgSecondary">
+        <Link to="/" className="flex items-center text-sm font-medium text-ncpor-accent hover:text-ncpor-lightIce transition-colors">
+          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Home
         </Link>
-        <button className="flex items-center text-sm font-medium text-slate-500 hover:text-slate-700">
-          <Share2 className="h-4 w-4 mr-1" /> Share
+        <button className="flex items-center text-sm font-medium text-ncpor-textMuted hover:text-ncpor-textPrimary transition-colors">
+          <Share2 className="h-4 w-4 mr-2" /> Share
         </button>
       </div>
       
       <div className="p-8 md:p-12">
-        <div className="flex items-center space-x-2 text-sm text-slate-500 mb-6">
-          <span className="bg-ocean-100 text-ocean-800 px-3 py-1 rounded-full font-semibold uppercase tracking-wider text-[10px]">
+        <div className="flex items-center space-x-3 text-sm text-ncpor-textMuted mb-8 font-medium">
+          <span className="bg-ncpor-accent/10 text-ncpor-accent border border-ncpor-accent/20 px-3 py-1 rounded-full uppercase tracking-wider text-[10px]">
             {content.content_category.replace('_', ' ')}
           </span>
-          <span className="flex items-center"><Calendar className="h-4 w-4 mr-1" /> {new Date(content.published_at).toLocaleDateString()}</span>
+          <span className="flex items-center tracking-wide"><Calendar className="h-4 w-4 mr-1.5" /> {new Date(content.published_at).toLocaleDateString()}</span>
         </div>
         
-        <h1 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4 leading-tight">
+        <h1 className="text-3xl md:text-5xl font-bold font-display text-ncpor-textPrimary mb-6 leading-tight">
           {content.generated_title || (isArticle ? parsedContent.headline : parsedContent.title)}
         </h1>
         
         {isArticle && parsedContent.subheading && (
-          <h2 className="text-xl text-slate-600 mb-8 font-medium leading-relaxed">
+          <h2 className="text-xl text-ncpor-textSecondary mb-10 font-medium leading-relaxed border-l-4 border-ncpor-accent pl-4">
             {parsedContent.subheading}
           </h2>
         )}
 
-        <div className="prose prose-lg max-w-none prose-ocean text-slate-700">
+        <div className="prose prose-lg max-w-none prose-invert prose-p:text-ncpor-textSecondary prose-headings:text-ncpor-textPrimary prose-headings:font-display prose-a:text-ncpor-accent text-ncpor-textSecondary">
           {isArticle && (
             <div className="whitespace-pre-line leading-relaxed">{parsedContent.body}</div>
           )}
@@ -83,22 +83,22 @@ const PublicContentDetail = () => {
               <div className="whitespace-pre-line leading-relaxed mb-10">{parsedContent.explainer_text}</div>
               
               {parsedContent.fun_fact && (
-                <div className="bg-ice-50 border border-ice-200 rounded-xl p-6 mb-10">
-                  <h3 className="text-xl font-bold text-ocean-800 mb-2 flex items-center">
+                <div className="bg-ncpor-glaciology/10 border border-ncpor-glaciology/30 rounded-xl p-8 mb-10">
+                  <h3 className="text-xl font-bold font-display text-ncpor-glaciology mb-3 flex items-center">
                     <BookOpen className="h-5 w-5 mr-2" /> Fun Fact
                   </h3>
-                  <p className="text-slate-700 italic">{parsedContent.fun_fact}</p>
+                  <p className="text-ncpor-textPrimary italic leading-relaxed">{parsedContent.fun_fact}</p>
                 </div>
               )}
               
               {parsedContent.glossary && parsedContent.glossary.length > 0 && (
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
-                  <h3 className="text-xl font-bold text-slate-800 mb-4">Glossary</h3>
-                  <dl className="space-y-4">
+                <div className="bg-ncpor-bgSecondary border border-ncpor-border rounded-xl p-8">
+                  <h3 className="text-2xl font-bold font-display text-ncpor-textPrimary mb-6">Glossary</h3>
+                  <dl className="space-y-6">
                     {parsedContent.glossary.map((g, idx) => (
-                      <div key={idx}>
-                        <dt className="font-bold text-ocean-700">{g.term}</dt>
-                        <dd className="text-slate-600 mt-1">{g.definition}</dd>
+                      <div key={idx} className="border-b border-ncpor-border/50 pb-4 last:border-0 last:pb-0">
+                        <dt className="font-bold text-lg text-ncpor-accent mb-1">{g.term}</dt>
+                        <dd className="text-ncpor-textSecondary leading-relaxed">{g.definition}</dd>
                       </div>
                     ))}
                   </dl>
@@ -115,9 +115,9 @@ const PublicContentDetail = () => {
         </div>
 
         {isArticle && parsedContent.suggested_tags && (
-          <div className="mt-12 pt-6 border-t border-slate-200 flex flex-wrap gap-2">
+          <div className="mt-12 pt-8 border-t border-ncpor-border flex flex-wrap gap-2.5">
             {parsedContent.suggested_tags.map(tag => (
-              <span key={tag} className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-sm font-medium">{tag}</span>
+              <span key={tag} className="bg-ncpor-bgSecondary text-ncpor-textSecondary border border-ncpor-border px-4 py-1.5 rounded-full text-sm font-medium tracking-wide">#{tag}</span>
             ))}
           </div>
         )}
