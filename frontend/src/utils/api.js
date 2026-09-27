@@ -554,8 +554,8 @@ export const contentAPI = {
     };
 
     if (generated.en) {
-      // Process only English for now
-      processLangContent(generated.en, 'en');
+      // Process only English for now, no suffix needed in UI
+      processLangContent(generated.en, '');
     } else {
       // Fallback for old format
       processLangContent(generated);
