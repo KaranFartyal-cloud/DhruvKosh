@@ -3,13 +3,130 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --ncpor-deep-blue: #0f172a;
-    --ncpor-ice-blue: #e0f2fe;
-    --ncpor-teal: #0d9488;
-    --ncpor-white: #ffffff;
-  }
   body {
-    @apply bg-slate-50 text-slate-900;
+    @apply bg-ncpor-bg text-ncpor-primary font-sans;
   }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-medium tracking-wide;
+  }
+
+  /* Respect prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* ── Scrollbar ── */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* ── Staggered fade-up helpers ── */
+  .stagger-1  { animation-delay:  50ms; }
+  .stagger-2  { animation-delay: 100ms; }
+  .stagger-3  { animation-delay: 150ms; }
+  .stagger-4  { animation-delay: 200ms; }
+  .stagger-5  { animation-delay: 250ms; }
+  .stagger-6  { animation-delay: 300ms; }
+  .stagger-7  { animation-delay: 350ms; }
+  .stagger-8  { animation-delay: 400ms; }
+  .stagger-9  { animation-delay: 450ms; }
+  .stagger-10 { animation-delay: 500ms; }
+  .stagger-12 { animation-delay: 600ms; }
+
+  /* ── Card hover: GPU-only properties ── */
+  .card-hover {
+    @apply transition-all duration-220 ease-out;
+  }
+  .card-hover:hover {
+    transform: translateY(-3px);
+    @apply border-ncpor-accent/40 shadow-premium-hover;
+  }
+
+  /* ── Button press feel ── */
+  .btn-press {
+    @apply transition-all duration-150 ease-out active:scale-[0.98];
+  }
+
+  /* ── Shimmer skeleton loader ── */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      #171717 25%,
+      #1c1c1c 50%,
+      #171717 75%
+    );
+    background-size: 200% auto;
+    @apply animate-shimmer rounded;
+  }
+
+  /* ── Page transition wrapper ── */
+  .page-enter {
+    animation: fadeUp 0.32s cubic-bezier(0.25,1,0.5,1) both;
+  }
+
+  /* ── Progress bar animation: triggered via JS by adding class ── */
+  .progress-animate {
+    animation: progressFill 0.9s cubic-bezier(0.25,1,0.5,1) both;
+  }
+
+  /* ── Accent sweep: light sweep across card on hover ── */
+  .sweep-hover {
+    position: relative;
+    overflow: hidden;
+  }
+  .sweep-hover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,106,42,0.04) 50%, transparent 60%);
+    background-size: 200% 100%;
+    background-position: -200% center;
+    transition: background-position 0.5s ease;
+  }
+  .sweep-hover:hover::after {
+    background-position: 200% center;
+  }
+
+  /* ── Signature NCPOR polar grid background ── */
+  .polar-grid {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.022;
+    background-image:
+      linear-gradient(rgba(255,106,42,0.6) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,106,42,0.6) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-position: center center;
+    animation: fadeIn 1.5s 0.3s ease-out both;
+  }
+
+  /* ── Tooltip fade ── */
+  .tooltip {
+    @apply invisible opacity-0 absolute z-50 px-2.5 py-1.5 text-xs font-medium bg-ncpor-elevated border border-ncpor-divider text-ncpor-primary rounded-lg whitespace-nowrap pointer-events-none;
+    transition: opacity 150ms ease-out, transform 150ms ease-out;
+    transform: translateY(4px);
+  }
+  .tooltip-parent:hover .tooltip {
+    @apply visible opacity-100;
+    transform: translateY(0);
+  }
+}
+
+/* ── Legacy animate-fade-in kept for backward compat ── */
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

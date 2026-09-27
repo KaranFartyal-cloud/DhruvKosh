@@ -66,17 +66,17 @@ const PublicHome = () => {
 
       {isLoading ? (
         <div className="text-center p-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ocean-600 mx-auto"></div>
-          <p className="text-slate-500 mt-4 font-medium">Loading polar content...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ncpor-accent mx-auto"></div>
+          <p className="text-ncpor-textMuted mt-4 font-medium tracking-wide uppercase text-sm">Loading polar content...</p>
         </div>
       ) : isError ? (
-        <div className="text-center p-20 text-red-500 bg-red-50 rounded-xl border border-red-100">
+        <div className="text-center p-20 text-ncpor-warning bg-ncpor-warning/10 rounded-xl border border-ncpor-warning/20">
           Failed to load content. Please try again later.
         </div>
       ) : contentList?.length === 0 ? (
-        <div className="text-center p-20 bg-white rounded-xl shadow-sm border border-slate-200">
-          <h2 className="text-xl font-bold text-slate-700 mb-2">No Published Content Yet</h2>
-          <p className="text-slate-500">Check back later for exciting stories from the poles.</p>
+        <div className="text-center p-20 bg-ncpor-card rounded-xl shadow-lg border border-ncpor-border">
+          <h2 className="text-xl font-bold text-ncpor-textPrimary mb-2 font-display">No Published Content Yet</h2>
+          <p className="text-ncpor-textSecondary">Check back later for exciting stories from the poles.</p>
         </div>
       ) : (
         <div id="latest" className={`space-y-16 ${lang === 'hi' ? 'font-hind' : ''}`}>
@@ -101,8 +101,8 @@ const PublicHome = () => {
                         <FileText className="h-12 w-12 text-ice-300 group-hover:scale-110 transition-transform duration-500" />
                       </div>
                       <div className="p-6 flex-grow flex flex-col">
-                        <div className="flex items-center text-xs text-slate-500 mb-2">
-                          <span className="font-semibold text-ocean-600">News</span>
+                        <div className="flex items-center text-xs text-ncpor-textMuted mb-3 tracking-wider uppercase font-medium">
+                          <span className="text-ncpor-accent">News</span>
                           <span className="mx-2">•</span>
                           <span>{new Date(article.published_at || article.created_at).toLocaleDateString()}</span>
                         </div>

@@ -45,83 +45,85 @@ const ExpeditionsList = () => {
   };
 
   return (
-    <div>
+    <div className="font-sans">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-slate-800">Expeditions</h1>
-        <button onClick={() => setShowModal(true)} className="bg-ocean-600 hover:bg-ocean-700 text-white px-4 py-2 rounded-lg shadow flex items-center space-x-2 transition-colors">
+        <h1 className="text-3xl font-bold font-display text-ncpor-textPrimary">Expeditions</h1>
+        <button onClick={() => setShowModal(true)} className="bg-ncpor-accent text-ncpor-bg hover:bg-ncpor-lightIce px-5 py-2.5 rounded-lg font-medium flex items-center space-x-2 transition-all shadow-[0_0_15px_rgba(69,214,194,0.15)] hover:shadow-[0_0_20px_rgba(69,214,194,0.3)] hover:-translate-y-0.5 duration-200">
           <Plus className="h-5 w-5" />
           <span>New Expedition</span>
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center">
-          <div className="relative w-64">
-            <Search className="h-5 w-5 absolute left-3 top-2.5 text-slate-400" />
-            <input type="text" placeholder="Search expeditions..." className="pl-10 pr-4 py-2 w-full border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean-500" />
+      <div className="bg-ncpor-card rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-ncpor-border overflow-hidden">
+        <div className="p-5 border-b border-ncpor-border bg-ncpor-bgSecondary flex items-center">
+          <div className="relative w-full md:w-80">
+            <Search className="h-5 w-5 absolute left-3.5 top-2.5 text-ncpor-textMuted" />
+            <input type="text" placeholder="Search expeditions..." className="pl-11 pr-4 py-2.5 w-full bg-ncpor-bg text-ncpor-textPrimary border border-ncpor-border rounded-lg focus:outline-none focus:ring-1 focus:ring-ncpor-accent focus:border-ncpor-accent transition-all placeholder:text-ncpor-textMuted" />
           </div>
         </div>
         
         {isLoading ? (
-          <div className="p-12 text-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ocean-600 mx-auto"></div>
+          <div className="p-16 text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ncpor-accent mx-auto"></div>
           </div>
         ) : (
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                <th className="p-4 font-semibold">Name</th>
-                <th className="p-4 font-semibold">Code</th>
-                <th className="p-4 font-semibold">Region</th>
-                <th className="p-4 font-semibold">Dates</th>
-                <th className="p-4 font-semibold">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {expeditions?.map(exp => (
-                <tr key={exp.id} className="hover:bg-ice-50 transition-colors">
-                  <td className="p-4">
-                    <Link to={`/admin/expeditions/${exp.id}`} className="font-semibold text-ocean-700 hover:underline">
-                      {exp.name}
-                    </Link>
-                  </td>
-                  <td className="p-4 text-slate-600">{exp.expedition_code}</td>
-                  <td className="p-4 text-slate-600 capitalize">{exp.region.replace('_', ' ')}</td>
-                  <td className="p-4 text-slate-600">
-                    {exp.start_date} {exp.end_date ? `to ${exp.end_date}` : ''}
-                  </td>
-                  <td className="p-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${
-                      exp.status === 'completed' ? 'bg-teal-100 text-teal-800' :
-                      exp.status === 'ongoing' ? 'bg-ocean-100 text-ocean-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {exp.status}
-                    </span>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-max">
+              <thead>
+                <tr className="bg-ncpor-bgSecondary text-ncpor-textSecondary text-sm border-b border-ncpor-border">
+                  <th className="p-5 font-semibold tracking-wide">Name</th>
+                  <th className="p-5 font-semibold tracking-wide">Code</th>
+                  <th className="p-5 font-semibold tracking-wide">Region</th>
+                  <th className="p-5 font-semibold tracking-wide">Dates</th>
+                  <th className="p-5 font-semibold tracking-wide">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-ncpor-border/50">
+                {expeditions?.map(exp => (
+                  <tr key={exp.id} className="hover:bg-ncpor-bgSecondary/50 transition-colors group">
+                    <td className="p-5">
+                      <Link to={`/admin/expeditions/${exp.id}`} className="font-semibold font-display text-lg text-ncpor-textPrimary group-hover:text-ncpor-accent transition-colors">
+                        {exp.name}
+                      </Link>
+                    </td>
+                    <td className="p-5 text-ncpor-textSecondary font-mono text-sm">{exp.expedition_code}</td>
+                    <td className="p-5 text-ncpor-textSecondary capitalize">{exp.region.replace('_', ' ')}</td>
+                    <td className="p-5 text-ncpor-textSecondary">
+                      {exp.start_date} {exp.end_date ? <span className="text-ncpor-textMuted mx-1">to</span> : ''} {exp.end_date}
+                    </td>
+                    <td className="p-5">
+                      <span className={`px-3 py-1.5 rounded-full text-xs font-semibold capitalize tracking-wide border ${
+                        exp.status === 'completed' ? 'bg-ncpor-success/10 text-ncpor-success border-ncpor-success/20' :
+                        exp.status === 'ongoing' ? 'bg-ncpor-accent/10 text-ncpor-accent border-ncpor-accent/20' :
+                        'bg-ncpor-warning/10 text-ncpor-warning border-ncpor-warning/20'
+                      }`}>
+                        {exp.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
-            <h2 className="text-xl font-bold text-slate-800 mb-4">Create New Expedition</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-ncpor-card border border-ncpor-border rounded-xl shadow-2xl max-w-md w-full p-8 relative overflow-hidden">
+            <h2 className="text-2xl font-bold font-display text-ncpor-textPrimary mb-6">Create New Expedition</h2>
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
-                <input required type="text" name="name" value={formData.name} onChange={handleChange} className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-ocean-500 outline-none" />
+                <label className="block text-sm font-medium text-ncpor-textSecondary mb-2">Name</label>
+                <input required type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-ncpor-bgSecondary text-ncpor-textPrimary border border-ncpor-border rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-ncpor-accent focus:border-ncpor-accent transition-all" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Expedition Code</label>
-                <input required type="text" name="expedition_code" value={formData.expedition_code} onChange={handleChange} className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-ocean-500 outline-none" />
+                <label className="block text-sm font-medium text-ncpor-textSecondary mb-2">Expedition Code</label>
+                <input required type="text" name="expedition_code" value={formData.expedition_code} onChange={handleChange} className="w-full bg-ncpor-bgSecondary text-ncpor-textPrimary border border-ncpor-border rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-ncpor-accent focus:border-ncpor-accent transition-all font-mono text-sm" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Region</label>
-                <select name="region" value={formData.region} onChange={handleChange} className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-ocean-500 outline-none">
+                <label className="block text-sm font-medium text-ncpor-textSecondary mb-2">Region</label>
+                <select name="region" value={formData.region} onChange={handleChange} className="w-full bg-ncpor-bgSecondary text-ncpor-textPrimary border border-ncpor-border rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-ncpor-accent focus:border-ncpor-accent transition-all">
                   <option value="antarctic">Antarctic</option>
                   <option value="arctic">Arctic</option>
                   <option value="himalaya">Himalaya</option>
@@ -130,17 +132,17 @@ const ExpeditionsList = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
-                  <input type="date" name="start_date" value={formData.start_date} onChange={handleChange} className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-ocean-500 outline-none" />
+                  <label className="block text-sm font-medium text-ncpor-textSecondary mb-2">Start Date</label>
+                  <input type="date" name="start_date" value={formData.start_date} onChange={handleChange} className="w-full bg-ncpor-bgSecondary text-ncpor-textPrimary border border-ncpor-border rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-ncpor-accent focus:border-ncpor-accent transition-all [color-scheme:dark]" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">End Date</label>
-                  <input type="date" name="end_date" value={formData.end_date} onChange={handleChange} className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-ocean-500 outline-none" />
+                  <label className="block text-sm font-medium text-ncpor-textSecondary mb-2">End Date</label>
+                  <input type="date" name="end_date" value={formData.end_date} onChange={handleChange} className="w-full bg-ncpor-bgSecondary text-ncpor-textPrimary border border-ncpor-border rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-ncpor-accent focus:border-ncpor-accent transition-all [color-scheme:dark]" />
                 </div>
               </div>
-              <div className="flex justify-end space-x-3 mt-6">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded font-medium">Cancel</button>
-                <button type="submit" disabled={mutation.isPending} className="px-6 py-2 bg-ocean-600 text-white hover:bg-ocean-700 rounded-lg shadow font-medium">
+              <div className="flex justify-end space-x-4 mt-8 pt-6 border-t border-ncpor-border/50">
+                <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 text-ncpor-textSecondary hover:text-ncpor-textPrimary font-medium transition-colors">Cancel</button>
+                <button type="submit" disabled={mutation.isPending} className="px-6 py-2.5 bg-ncpor-accent text-ncpor-bg hover:bg-ncpor-lightIce rounded-lg font-medium shadow-[0_0_15px_rgba(69,214,194,0.15)] transition-all">
                   {mutation.isPending ? 'Creating...' : 'Create'}
                 </button>
               </div>
