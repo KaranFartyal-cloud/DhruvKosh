@@ -46,7 +46,7 @@ async def generate_content_for_item(
                     platform=Platform(platform_name),
                     language=lang,
                     generated_text=post_data.get("text", ""),
-                    status=GeneratedStatus.DRAFT,
+                    status=GeneratedStatus.draft,
                     suggested_media_id=post_data.get("suggested_media_id")
                 )
                 db.add(content)
@@ -62,7 +62,7 @@ async def generate_content_for_item(
                 content_type=ContentCategory.website_article,
                 language=lang,
                 generated_text=f"{article.get('headline', '')}\n\n{article.get('subheading', '')}\n\n{article.get('body', '')}",
-                status=GeneratedStatus.DRAFT,
+                status=GeneratedStatus.draft,
                 suggested_media_id=article.get("suggested_media_id"),
                 metadata_json={"tags": article.get("suggested_tags", [])}
             )
@@ -79,7 +79,7 @@ async def generate_content_for_item(
                 content_type=ContentCategory.educational_explainer,
                 language=lang,
                 generated_text=f"{edu.get('title', '')}\n\n{edu.get('explainer_text', '')}\n\nFun Fact: {edu.get('fun_fact', '')}",
-                status=GeneratedStatus.DRAFT,
+                status=GeneratedStatus.draft,
                 suggested_media_id=edu.get("suggested_media_id"),
                 metadata_json={"glossary": edu.get("glossary", [])}
             )
@@ -96,7 +96,7 @@ async def generate_content_for_item(
                 content_type=ContentCategory.educational_explainer,
                 language=lang,
                 generated_text="Quiz generated (see metadata)",
-                status=GeneratedStatus.DRAFT,
+                status=GeneratedStatus.draft,
                 metadata_json={"questions": quiz}
             )
             db.add(content)
