@@ -2,11 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer base {
+  :root {
+    --ncpor-deep-blue: #0f172a;
+    --ncpor-ice-blue: #e0f2fe;
+    --ncpor-teal: #0d9488;
+    --ncpor-white: #ffffff;
+  }
+  body {
+    @apply bg-slate-50 text-slate-900;
+  }
 }

@@ -3,26 +3,23 @@ from sqlalchemy.orm import Session
 from typing import Optional
 import os
 import uuid
-import shutil
 from app.database import get_db
 from app.models import Publication
 from app.schemas import PublicationCreate, PublicationResponse
+from app.utils import validate_file_type
 
 router = APIRouter()
-
 UPLOAD_DIR = "uploads"
+ALLOWED_MIMES = ["application/pdf"]
 
 def format_citation(authors: list, year: str, title: str, journal: str, doi: str) -> str:
-    """Format citation in standard format"""
     authors_str = ", ".join(authors) if authors else "Unknown Author"
     year_str = year or "n.d."
     journal_str = journal or "Unknown Venue"
     doi_str = f"DOI: {doi}" if doi else ""
-    
     citation = f"{authors_str} ({year_str}). {title}. {journal_str}."
     if doi_str:
         citation += f" {doi_str}"
-    
     return citation
 
 @router.post("", response_model=PublicationResponse)
@@ -39,36 +36,28 @@ async def upload_publication(
     db: Session = Depends(get_db)
 ):
     file_path = None
-    
-    # Handle file upload if provided
     if file:
-        if file.content_type != "application/pdf":
-            raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+        content = await file.read()
+        if not validate_file_type(content, ALLOWED_MIMES):
+            if file.content_type not in ALLOWED_MIMES:
+                raise HTTPException(status_code=400, detail="Only actual PDF files are allowed")
         
-        # Create upload directory
         pub_dir = os.path.join(UPLOAD_DIR, "publications", str(expedition_id) if expedition_id else "standalone")
         os.makedirs(pub_dir, exist_ok=True)
-        
-        # Generate unique filename
         file_extension = os.path.splitext(file.filename)[1]
         unique_filename = f"{uuid.uuid4()}{file_extension}"
         file_path = os.path.join(pub_dir, unique_filename)
         
-        # Save file
         try:
             with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
+                buffer.write(content)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
     
-    # Parse authors and keywords
     authors_list = [a.strip() for a in authors.split(",")] if authors else None
     keywords_list = [k.strip() for k in keywords.split(",")] if keywords else None
-    
-    # Generate citation
     citation = format_citation(authors_list, publication_date, title, journal_or_venue, doi)
     
-    # Create database entry
     try:
         publication = Publication(
             expedition_id=expedition_id,
@@ -103,3 +92,14 @@ def get_publication(publication_id: int, db: Session = Depends(get_db)):
     if not publication:
         raise HTTPException(status_code=404, detail="Publication not found")
     return publication
+
+@router.delete("/{publication_id}")
+def delete_publication(publication_id: int, db: Session = Depends(get_db)):
+    publication = db.query(Publication).filter(Publication.id == publication_id).first()
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    if publication.file_path and os.path.exists(publication.file_path):
+        os.remove(publication.file_path)
+    db.delete(publication)
+    db.commit()
+    return {"message": "Deleted successfully"}

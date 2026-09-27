@@ -1,65 +1,31 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Repository from './pages/Repository';
-import Upload from './pages/Upload';
-import ContentDetail from './pages/ContentDetail';
-import Dashboard from './pages/Dashboard';
-import Login from './pages/Login';
-
-// Set this to false to disable authentication for hackathon demo
-const USE_AUTH = import.meta.env.VITE_USE_AUTH !== 'false';
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Navigation from './components/Navigation';
+import PublicHome from './pages/PublicHome';
+import AdminDashboard from './pages/AdminDashboard';
+import ExpeditionsList from './pages/ExpeditionsList';
+import ExpeditionDetail from './pages/ExpeditionDetail';
+import PublicContentDetail from './pages/PublicContentDetail';
 
 function App() {
-  const isAuthenticated = () => {
-    return localStorage.getItem('auth_token') !== null;
-  };
-
-  const ProtectedRoute = ({ children }) => {
-    if (!USE_AUTH) return children;
-    return isAuthenticated() ? children : <Navigate to="/login" />;
-  };
-
   return (
-    <Router>
-      <div className="min-h-screen bg-ocean-50">
-        {(!USE_AUTH || isAuthenticated()) && <Navbar />}
-        <Routes>
-          {USE_AUTH && <Route path="/login" element={<Login />} />}
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Repository />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/upload"
-            element={
-              <ProtectedRoute>
-                <Upload />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/content/:id"
-            element={
-              <ProtectedRoute>
-                <ContentDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+    <BrowserRouter>
+      <div className="min-h-screen bg-ice-50 font-sans flex flex-col">
+        <Navigation />
+        <main className="flex-grow container mx-auto px-4 py-8">
+          <Routes>
+            <Route path="/" element={<PublicHome />} />
+            <Route path="/content/:id" element={<PublicContentDetail />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/expeditions" element={<ExpeditionsList />} />
+            <Route path="/admin/expeditions/:id" element={<ExpeditionDetail />} />
+          </Routes>
+        </main>
+        <footer className="bg-ocean-900 text-white p-6 text-center">
+          <p>&copy; 2026 National Centre for Polar and Ocean Research (NCPOR)</p>
+        </footer>
       </div>
-    </Router>
+    </BrowserRouter>
   );
 }
 

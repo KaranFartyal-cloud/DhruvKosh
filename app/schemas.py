@@ -80,6 +80,8 @@ class DatasetPreview(BaseModel):
     columns: List[str]
     rows: List[List[str]]
     total_rows: int
+    preview_error: Optional[str] = None
+    stats: Optional[dict] = None
 
 # User Schemas
 class UserBase(BaseModel):

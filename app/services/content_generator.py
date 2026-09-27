@@ -138,7 +138,7 @@ Generate the {platform} post."""
     
     try:
         response = client.chat.completions.create(
-            model="llama3-70b-8192",
+            model="openai/gpt-oss-120b",
             max_tokens=max_tokens.get(platform, 200),
             messages=[
                 {"role": "system", "content": system_prompt},
@@ -186,18 +186,22 @@ Generate a website article in JSON format with headline, subheading, body, and s
 
     try:
         response = client.chat.completions.create(
-            model="llama3-70b-8192",
-            max_tokens=600,
+            model="openai/gpt-oss-120b",
+            max_tokens=2000,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message}
             ],
-            temperature=0.7,
-            response_format={"type": "json_object"}
+            temperature=0.7
         )
         
         import json
-        result = json.loads(response.choices[0].message.content)
+        content = response.choices[0].message.content
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0]
+        elif "```" in content:
+            content = content.split("```")[1].split("```")[0]
+        result = json.loads(content.strip())
         return result
     except Exception as e:
         logger.error(f"Failed to generate website article: {str(e)}")
@@ -242,18 +246,22 @@ Generate an educational explainer in JSON format with title, explainer_text, glo
 
     try:
         response = client.chat.completions.create(
-            model="llama3-70b-8192",
-            max_tokens=800,
+            model="openai/gpt-oss-120b",
+            max_tokens=2000,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message}
             ],
-            temperature=0.7,
-            response_format={"type": "json_object"}
+            temperature=0.7
         )
         
         import json
-        result = json.loads(response.choices[0].message.content)
+        content = response.choices[0].message.content
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0]
+        elif "```" in content:
+            content = content.split("```")[1].split("```")[0]
+        result = json.loads(content.strip())
         return result
     except Exception as e:
         logger.error(f"Failed to generate educational explainer: {str(e)}")
@@ -288,22 +296,34 @@ Generate 3 multiple-choice quiz questions in JSON array format."""
 
     try:
         response = client.chat.completions.create(
-            model="llama3-70b-8192",
-            max_tokens=600,
+            model="openai/gpt-oss-120b",
+            max_tokens=2000,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message}
             ],
-            temperature=0.7,
-            response_format={"type": "json_object"}
+            temperature=0.7
         )
         
         import json
-        result = json.loads(response.choices[0].message.content)
+        content = response.choices[0].message.content
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0]
+        elif "```" in content:
+            content = content.split("```")[1].split("```")[0]
+        result = json.loads(content.strip())
         return result if isinstance(result, list) else result.get("questions", [])
     except Exception as e:
         logger.error(f"Failed to generate quiz: {str(e)}")
         return []
+
+async def _run_with_timeout(coro, timeout=30):
+    try:
+        return await asyncio.wait_for(coro, timeout)
+    except asyncio.TimeoutError:
+        return Exception(f"Generation timed out after {timeout} seconds")
+    except Exception as e:
+        return Exception(str(e))
 
 async def generate_all_content(expedition_id: int, db_session) -> Dict:
     """Orchestrate all content generation concurrently."""
@@ -313,6 +333,10 @@ async def generate_all_content(expedition_id: int, db_session) -> Dict:
     
     if not source_material:
         return {"error": "No source material found for this expedition"}
+        
+    # Log the source material for transparency/debugging
+    with open(f"source_material_{expedition_id}.log", "w", encoding="utf-8") as f:
+        f.write(source_material)
     
     # Get expedition name
     from app.models import Expedition
@@ -321,23 +345,31 @@ async def generate_all_content(expedition_id: int, db_session) -> Dict:
     
     # Run all generations concurrently
     tasks = [
-        asyncio.to_thread(generate_social_post, source_material, expedition_name, "twitter"),
-        asyncio.to_thread(generate_social_post, source_material, expedition_name, "instagram"),
-        asyncio.to_thread(generate_social_post, source_material, expedition_name, "linkedin"),
-        asyncio.to_thread(generate_website_article, source_material, expedition_name),
-        asyncio.to_thread(generate_educational_explainer, source_material, expedition_name, "school"),
-        asyncio.to_thread(generate_quiz_from_content, source_material)
+        _run_with_timeout(asyncio.to_thread(generate_social_post, source_material, expedition_name, "twitter")),
+        _run_with_timeout(asyncio.to_thread(generate_social_post, source_material, expedition_name, "instagram")),
+        _run_with_timeout(asyncio.to_thread(generate_social_post, source_material, expedition_name, "linkedin")),
+        _run_with_timeout(asyncio.to_thread(generate_website_article, source_material, expedition_name)),
+        _run_with_timeout(asyncio.to_thread(generate_educational_explainer, source_material, expedition_name, "school")),
+        _run_with_timeout(asyncio.to_thread(generate_quiz_from_content, source_material))
     ]
     
     results = await asyncio.gather(*tasks, return_exceptions=True)
     
-    return {
+    generation_errors = []
+    for i, r in enumerate(results):
+        if isinstance(r, Exception):
+            generation_errors.append(f"Task {i} failed: {str(r)}")
+            
+    response = {
         "social_posts": {
-            "twitter": results[0] if not isinstance(results[0], Exception) else str(results[0]),
-            "instagram": results[1] if not isinstance(results[1], Exception) else str(results[1]),
-            "linkedin": results[2] if not isinstance(results[2], Exception) else str(results[2])
+            "twitter": results[0] if not isinstance(results[0], Exception) else "Error: " + str(results[0]),
+            "instagram": results[1] if not isinstance(results[1], Exception) else "Error: " + str(results[1]),
+            "linkedin": results[2] if not isinstance(results[2], Exception) else "Error: " + str(results[2])
         },
         "website_article": results[3] if not isinstance(results[3], Exception) else {"error": str(results[3])},
         "educational_explainer": results[4] if not isinstance(results[4], Exception) else {"error": str(results[4])},
-        "quiz": results[5] if not isinstance(results[5], Exception) else []
+        "quiz": results[5] if not isinstance(results[5], Exception) else [],
+        "generation_errors": generation_errors
     }
+    
+    return response

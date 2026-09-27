@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
 from app.routes import expeditions, reports, datasets, publications, media, activities, files, auth, generated_content
 import uvicorn
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI(title="NCPOR Polar Science Outreach Portal")
 
