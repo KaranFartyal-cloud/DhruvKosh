@@ -105,10 +105,7 @@ async def generate_content_for_item(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to save generated content: {str(e)}")
         
-    return AllGeneratedContent(
-        en=generated.get("en", {}),
-        hi=generated.get("hi", {})
-    )
+    return generated
 
 @router.post("/generate/{expedition_id}")
 async def generate_content_for_expedition(
