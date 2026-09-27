@@ -11,6 +11,7 @@ elif DATABASE_URL.startswith("postgresql://") and not DATABASE_URL.startswith("p
 
 engine = create_engine(
     DATABASE_URL,
+    pool_pre_ping=True,
     connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
 )
 
