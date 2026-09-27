@@ -1,0 +1,77 @@
+{
+  "social_posts": {
+    "twitter": "",
+    "instagram": "",
+    "linkedin": ""
+  },
+  "website_article": {
+    "headline": "13th Indian Arctic Expedition Documents Accelerated Permafrost Thaw and Aerosol Dynamics in Svalbard",
+    "subheading": "Summer 2024 fieldwork at Himadri Research Station reveals a 15\u202fcm rise in active layer thickness and detailed aerosol profiles, underscoring climate feedbacks in the High Arctic.",
+    "body": "The 13th Indian Arctic Expedition (IAR\u201113), led by Dr. Priya Sharma and operating from the Himadri Research Station in Ny\u2011\u00c5lesund, Svalbard, concluded its two\u2011month campaign on 30\u202fAugust\u202f2024. The mission, part of NCPOR\u2019s long\u2011term Arctic climate monitoring programme, focused on atmospheric aerosol measurements and permafrost dynamics to improve understanding of climate\u2011driven changes in the polar environment.\n\nPermafrost monitoring at Ny\u2011\u00c5lesund recorded a 15\u202fcm increase in the active layer thickness compared with the 2023 baseline. Ground\u2011temperature sensors positioned at one metre depth documented a cumulative warming trend of 2.5\u202f\u00b0C over the past decade, confirming a persistent upward temperature trajectory. Concurrent vegetation observations indicated an earlier onset of spring phenology, suggesting ecosystem responses to the warming permafrost.\n\nIn parallel, the expedition deployed continuous aerosol monitoring equipment at Himadri Station throughout the summer. The dataset captures concentrations of PM2.5, PM10, black carbon, and sulfate, providing a high\u2011resolution record of aerosol loading in the Arctic boundary layer. These measurements are critical for assessing the role of aerosols in radiative forcing and cloud formation over the region.\n\nFindings from the permafrost study have been synthesized in the peer\u2011reviewed article \u201cAccelerated permafrost degradation in the High Arctic: 2024 observations\u201d (Sharma, Singh, Gupta) published in *Arctic, Antarctic, and Alpine Research*. The authors highlight the potential for amplified carbon\u2011cycle feedbacks as permafrost thaws at an accelerating rate.\n\nThe expedition\u2019s outcomes reinforce NCPOR\u2019s mandate to generate actionable scientific knowledge on polar processes. By integrating atmospheric and cryospheric observations, the agency continues to support national and international efforts to monitor climate change, inform policy, and safeguard the fragile Arctic ecosystem.",
+    "suggested_tags": [
+      "#ArcticResearch",
+      "#Permafrost",
+      "#AtmosphericScience",
+      "#NCPOR",
+      "#ClimateChange"
+    ]
+  },
+  "educational_explainer": {
+    "title": "How India's Arctic Expedition Helps Us Understand Climate Change",
+    "explainer_text": "The 13th Indian Arctic Expedition went to the icy islands of Svalbard to study how the frozen ground (permafrost) and the air are changing. Scientists found that the top layer of permafrost is now 15\u202fcm thicker than last year and that the ground temperature at just 1\u202fm below the surface has warmed by about 2.5\u202f\u00b0C over the last ten years. They also measured tiny particles in the air, like PM2.5, PM10, black carbon and sulfate. \n\nWhy does this matter for us in India? When permafrost thaws, it releases greenhouse gases such as carbon dioxide and methane, which add to the heat trapped in the atmosphere. More heat can change weather patterns far away, affecting India's monsoon rains and sea\u2011level rise that threatens coastal cities. The aerosols they measured can travel long distances and influence cloud formation, which also affects rainfall. By keeping an eye on these changes in the Arctic, Indian scientists can improve climate forecasts and help the country prepare for future weather challenges.",
+    "glossary": [
+      {
+        "term": "Permafrost",
+        "definition": "Ground that stays frozen for at least two years, covering large parts of the Arctic."
+      },
+      {
+        "term": "Active layer",
+        "definition": "The top part of permafrost that thaws each summer and refreezes in winter."
+      },
+      {
+        "term": "Aerosol",
+        "definition": "Tiny particles or droplets suspended in the air, like dust, soot (black carbon), or chemicals."
+      },
+      {
+        "term": "Black carbon",
+        "definition": "A type of soot that absorbs sunlight and can warm the atmosphere."
+      }
+    ],
+    "fun_fact": "The active layer of permafrost in Ny\u2011\u00c5lesund grew 15\u202fcm thicker in just one year compared to 2023."
+  },
+  "quiz": [
+    {
+      "question": "By how much did the active layer thickness increase in Ny-\u00c5lesund during the 2024 permafrost monitoring compared to 2023?",
+      "options": [
+        "5 cm",
+        "10 cm",
+        "15 cm",
+        "20 cm"
+      ],
+      "correct_index": 2,
+      "explanation": "The report states that permafrost monitoring in Ny-\u00c5lesund shows an increased active layer thickness of 15\u202fcm compared to 2023 measurements."
+    },
+    {
+      "question": "Which set of parameters is measured in the Arctic Atmospheric Aerosol Measurements dataset collected at Himadri station in summer 2024?",
+      "options": [
+        "PM2.5, PM10, black carbon, sulfate",
+        "Ozone, nitrogen dioxide, carbon monoxide, methane",
+        "Wind speed, humidity, solar radiation, barometric pressure",
+        "Sea\u2011salt particles, dust, pollen, volcanic ash"
+      ],
+      "correct_index": 0,
+      "explanation": "The dataset description lists the atmospheric parameters as PM2.5, PM10, black carbon, and sulfate."
+    },
+    {
+      "question": "Who served as the team lead for the 13th Indian Arctic Expedition (IAR\u201113)?",
+      "options": [
+        "Dr. Anil Kumar",
+        "Dr. Priya Sharma",
+        "Dr. Rajesh Patel",
+        "Dr. Meera Joshi"
+      ],
+      "correct_index": 1,
+      "explanation": "The expedition information identifies Dr. Priya Sharma as the team lead."
+    }
+  ]
+}

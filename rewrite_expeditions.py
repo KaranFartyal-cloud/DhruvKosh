@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+import os
+
+expeditions_content = """from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.database import get_db
@@ -45,11 +47,8 @@ def get_expeditions(
     total_count = query.count()
     items = query.order_by(DBExpedition.start_date.desc()).offset((page - 1) * page_size).limit(page_size).all()
     
-    # Serialize the list of SQLAlchemy objects to dicts
-    serialized_items = [SchemaExpedition.model_validate(item).model_dump(mode='json') for item in items]
-    
     return {
-        "items": serialized_items,
+        "items": items,
         "total_count": total_count,
         "page": page,
         "page_size": page_size
@@ -95,3 +94,7 @@ def get_expedition_full(expedition_id: int, db: Session = Depends(get_db)):
     if result.activities is None: result.activities = []
     
     return result
+"""
+
+with open("d:/planb/app/routes/expeditions.py", "w") as f:
+    f.write(expeditions_content)

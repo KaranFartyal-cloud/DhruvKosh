@@ -212,6 +212,8 @@ class GeneratedContent(Base):
     platform = Column(Enum(Platform), nullable=True)
     generated_text = Column(Text, nullable=False)
     generated_title = Column(String, nullable=True)
+    suggested_media_id = Column(Integer, nullable=True)
+    language = Column(String, default="en", nullable=False)
     status = Column(Enum(GeneratedStatus), default=GeneratedStatus.draft)
     created_at = Column(DateTime, default=datetime.utcnow)
     published_at = Column(DateTime, nullable=True)
