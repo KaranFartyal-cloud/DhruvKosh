@@ -322,11 +322,7 @@ const ContentDetail = () => {
         )}
       </div>
       
-      {/* File Preview */}
-      <div className="mb-8">
-        {renderFilePreview()}
-      </div>
-      
+
       {/* Generated Posts Section */}
       {content.generated_posts && content.generated_posts.length > 0 && (
         <div className="bg-ncpor-panel border border-ncpor-divider rounded-xl shadow-premium p-8">
