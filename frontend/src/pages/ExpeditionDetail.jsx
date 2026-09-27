@@ -1,73 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Bot, FileText, BarChart, Book, Image as ImageIcon, AlertCircle, RefreshCw, Send, Plus } from 'lucide-react';
 import { API_BASE_URL } from '../config';
-import { Bot, FileText, BarChart, Book, Image as ImageIcon, Activity, AlertCircle, RefreshCw, Send, CheckCircle } from 'lucide-react';
+import * as expeditionApi from '../api/expeditions';
+import * as genApi from '../api/generated';
 import Quiz from '../components/Quiz';
+import UploadModal from '../components/UploadModal';
 
 const ExpeditionDetail = () => {
   const { id } = useParams();
-  const [expedition, setExpedition] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('reports');
-  const [aiContent, setAiContent] = useState(null);
-  const [generatingAI, setGeneratingAI] = useState(false);
-  const [aiError, setAiError] = useState(null);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  
+  // Data Fetching via React Query
+  const { data: expedition, isLoading: loadingExpedition, isError: expError } = useQuery({
+    queryKey: ['expedition', id],
+    queryFn: () => expeditionApi.getExpeditionFull(id)
+  });
 
-  const fetchExpedition = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/api/expeditions/${id}/full`);
-      setExpedition(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+  const { data: aiContent, isLoading: loadingAi, refetch: refetchAi } = useQuery({
+    queryKey: ['aiContent', id],
+    queryFn: () => genApi.getGeneratedContent(id)
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: () => genApi.generateContent(id),
+    onSuccess: (data) => {
+      // Data shape directly from generation API differs from fetch API, so just invalidate to refetch properly formatted
+      queryClient.invalidateQueries(['aiContent', id]);
     }
-  };
+  });
 
-  const fetchAiContent = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/api/generated/expedition/${id}/content`);
-      // Reformat the response to match what the generation endpoint returns directly
-      if (res.data && (res.data.social_posts.length > 0 || res.data.website_articles.length > 0)) {
-        const formatted = {
-          social_posts: {
-            twitter: res.data.social_posts.find(p => p.platform === 'twitter')?.generated_text || '',
-            instagram: res.data.social_posts.find(p => p.platform === 'instagram')?.generated_text || '',
-            linkedin: res.data.social_posts.find(p => p.platform === 'linkedin')?.generated_text || ''
-          },
-          website_article: res.data.website_articles.length > 0 ? JSON.parse(res.data.website_articles[0].generated_text) : null,
-          educational_explainer: res.data.educational_explainers.length > 0 ? JSON.parse(res.data.educational_explainers.find(e => !e.generated_text.includes('quiz'))?.generated_text || '{}') : null,
-          quiz: res.data.educational_explainers.length > 0 ? JSON.parse(res.data.educational_explainers.find(e => e.generated_text.includes('quiz'))?.generated_text || '[]') : []
-        };
-        setAiContent(formatted);
-      }
-    } catch (err) {
-      console.error("No previous AI content or failed to load");
-    }
-  };
-
-  useEffect(() => {
-    fetchExpedition();
-    fetchAiContent();
-  }, [id]);
-
-  const generateAIContent = async () => {
-    setGeneratingAI(true);
-    setAiError(null);
-    try {
-      const res = await axios.post(`${API_BASE_URL}/api/generated/generate/${id}`);
-      setAiContent(res.data);
-    } catch (err) {
-      console.error(err);
-      setAiError("Failed to generate AI content. Please try again.");
-    } finally {
-      setGeneratingAI(false);
-    }
-  };
-
-  if (loading) return <div className="text-center p-20"><div className="animate-spin h-10 w-10 border-4 border-ocean-600 border-t-transparent rounded-full mx-auto"></div></div>;
-  if (!expedition) return <div className="text-center p-20 text-red-500">Expedition not found</div>;
+  if (loadingExpedition) return <div className="text-center p-20"><div className="animate-spin h-10 w-10 border-4 border-ocean-600 border-t-transparent rounded-full mx-auto"></div></div>;
+  if (expError || !expedition) return <div className="text-center p-20 text-red-500">Expedition not found or failed to load.</div>;
 
   return (
     <div>
@@ -90,11 +57,18 @@ const ExpeditionDetail = () => {
         {/* Left Column: Data Tabs */}
         <div className="lg:w-2/3 space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="flex border-b border-slate-200 bg-slate-50 overflow-x-auto">
-              <button onClick={() => setActiveTab('reports')} className={`flex items-center space-x-2 px-6 py-4 font-medium transition-colors ${activeTab === 'reports' ? 'text-ocean-700 border-b-2 border-ocean-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}><FileText className="h-4 w-4" /><span>Reports ({expedition.reports.length})</span></button>
-              <button onClick={() => setActiveTab('datasets')} className={`flex items-center space-x-2 px-6 py-4 font-medium transition-colors ${activeTab === 'datasets' ? 'text-ocean-700 border-b-2 border-ocean-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}><BarChart className="h-4 w-4" /><span>Datasets ({expedition.datasets.length})</span></button>
-              <button onClick={() => setActiveTab('publications')} className={`flex items-center space-x-2 px-6 py-4 font-medium transition-colors ${activeTab === 'publications' ? 'text-ocean-700 border-b-2 border-ocean-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}><Book className="h-4 w-4" /><span>Publications ({expedition.publications.length})</span></button>
-              <button onClick={() => setActiveTab('media')} className={`flex items-center space-x-2 px-6 py-4 font-medium transition-colors ${activeTab === 'media' ? 'text-ocean-700 border-b-2 border-ocean-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}><ImageIcon className="h-4 w-4" /><span>Media ({expedition.media_items.length})</span></button>
+            <div className="flex border-b border-slate-200 bg-slate-50 overflow-x-auto justify-between">
+              <div className="flex">
+                <button onClick={() => setActiveTab('reports')} className={`flex items-center space-x-2 px-6 py-4 font-medium transition-colors ${activeTab === 'reports' ? 'text-ocean-700 border-b-2 border-ocean-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}><FileText className="h-4 w-4" /><span>Reports ({expedition.reports.length})</span></button>
+                <button onClick={() => setActiveTab('datasets')} className={`flex items-center space-x-2 px-6 py-4 font-medium transition-colors ${activeTab === 'datasets' ? 'text-ocean-700 border-b-2 border-ocean-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}><BarChart className="h-4 w-4" /><span>Datasets ({expedition.datasets.length})</span></button>
+                <button onClick={() => setActiveTab('publications')} className={`flex items-center space-x-2 px-6 py-4 font-medium transition-colors ${activeTab === 'publications' ? 'text-ocean-700 border-b-2 border-ocean-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}><Book className="h-4 w-4" /><span>Publications ({expedition.publications.length})</span></button>
+                <button onClick={() => setActiveTab('media')} className={`flex items-center space-x-2 px-6 py-4 font-medium transition-colors ${activeTab === 'media' ? 'text-ocean-700 border-b-2 border-ocean-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}><ImageIcon className="h-4 w-4" /><span>Media ({expedition.media_items.length})</span></button>
+              </div>
+              <div className="p-3">
+                <button onClick={() => setUploadModalOpen(true)} className="flex items-center space-x-1 bg-ocean-100 text-ocean-700 hover:bg-ocean-200 px-3 py-1.5 rounded text-sm font-semibold transition-colors">
+                  <Plus className="h-4 w-4" /> <span>Upload</span>
+                </button>
+              </div>
             </div>
             
             <div className="p-6">
@@ -106,7 +80,7 @@ const ExpeditionDetail = () => {
                         <h4 className="font-semibold text-slate-800">{r.title}</h4>
                         <p className="text-xs text-slate-500 mt-1 capitalize">{r.report_type} Report • {r.page_count || 0} pages</p>
                       </div>
-                      <a href={`${API_BASE_URL}/api/files/${r.file_path.replace('uploads/', '')}`} target="_blank" rel="noreferrer" className="text-ocean-600 hover:underline text-sm font-medium">View File</a>
+                      <a href={`${API_BASE_URL}/api/files/${r.file_path.replace('uploads/', '')}`} target="_blank" rel="noreferrer" className="text-ocean-600 hover:underline text-sm font-medium">View PDF</a>
                     </div>
                   ))}
                 </div>
@@ -119,7 +93,7 @@ const ExpeditionDetail = () => {
                         <h4 className="font-semibold text-slate-800">{d.title}</h4>
                         <p className="text-xs text-slate-500 mt-1 capitalize">{d.data_type} • {d.file_format} • {d.parameters_measured?.join(', ')}</p>
                       </div>
-                      <a href={`${API_BASE_URL}/api/files/${d.file_path.replace('uploads/', '')}`} target="_blank" rel="noreferrer" className="text-ocean-600 hover:underline text-sm font-medium">Download</a>
+                      <a href={`${API_BASE_URL}/api/files/${d.file_path.replace('uploads/', '')}`} target="_blank" rel="noreferrer" className="text-ocean-600 hover:underline text-sm font-medium">Download Data</a>
                     </div>
                   ))}
                 </div>
@@ -127,10 +101,13 @@ const ExpeditionDetail = () => {
               {activeTab === 'publications' && (
                 <div className="space-y-4">
                   {expedition.publications.length === 0 ? <p className="text-slate-500">No publications linked yet.</p> : expedition.publications.map(p => (
-                    <div key={p.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50">
-                      <h4 className="font-semibold text-slate-800">{p.title}</h4>
-                      <p className="text-sm text-slate-600 mt-1">{p.authors?.join(', ')}</p>
-                      <p className="text-xs text-slate-500 mt-2 italic">{p.journal_or_venue}</p>
+                    <div key={p.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50 flex justify-between items-start">
+                      <div>
+                        <h4 className="font-semibold text-slate-800">{p.title}</h4>
+                        <p className="text-sm text-slate-600 mt-1">{p.authors?.join(', ')}</p>
+                        <p className="text-xs text-slate-500 mt-2 italic">{p.journal_or_venue}</p>
+                      </div>
+                      {p.file_path && <a href={`${API_BASE_URL}/api/files/${p.file_path.replace('uploads/', '')}`} target="_blank" rel="noreferrer" className="text-ocean-600 hover:underline text-sm font-medium">PDF</a>}
                     </div>
                   ))}
                 </div>
@@ -139,8 +116,12 @@ const ExpeditionDetail = () => {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {expedition.media_items.length === 0 ? <p className="text-slate-500 col-span-3">No media uploaded yet.</p> : expedition.media_items.map(m => (
                     <div key={m.id} className="border border-slate-200 rounded-lg overflow-hidden bg-slate-50">
-                      <div className="h-32 bg-slate-200 flex items-center justify-center">
-                         <ImageIcon className="h-8 w-8 text-slate-400" />
+                      <div className="h-32 bg-slate-200 flex items-center justify-center relative overflow-hidden">
+                         {m.media_type === 'photo' ? (
+                           <img src={`${API_BASE_URL}/api/files/${m.file_path.replace('uploads/', '')}`} className="object-cover w-full h-full" alt={m.title} />
+                         ) : (
+                           <ImageIcon className="h-8 w-8 text-slate-400" />
+                         )}
                       </div>
                       <div className="p-3">
                         <h4 className="font-semibold text-slate-800 text-sm line-clamp-1">{m.title}</h4>
@@ -168,28 +149,28 @@ const ExpeditionDetail = () => {
             </div>
             
             <div className="p-6 bg-white text-slate-800">
-              {generatingAI ? (
+              {generateMutation.isPending ? (
                 <div className="text-center py-10">
                   <div className="animate-spin h-10 w-10 border-4 border-ocean-600 border-t-transparent rounded-full mx-auto mb-4"></div>
                   <p className="font-medium text-ocean-800">Analyzing expedition data...</p>
                   <p className="text-sm text-slate-500 mt-2">This usually takes 30-60 seconds</p>
                 </div>
-              ) : !aiContent ? (
+              ) : !aiContent && !loadingAi ? (
                 <div className="text-center py-6">
                   <Bot className="h-16 w-16 text-slate-200 mx-auto mb-4" />
                   <p className="text-slate-600 mb-6">No outreach content generated yet.</p>
-                  <button onClick={generateAIContent} className="w-full bg-ocean-600 hover:bg-ocean-700 text-white py-3 rounded-lg font-medium shadow-md transition-colors flex items-center justify-center space-x-2">
+                  <button onClick={() => generateMutation.mutate()} className="w-full bg-ocean-600 hover:bg-ocean-700 text-white py-3 rounded-lg font-medium shadow-md transition-colors flex items-center justify-center space-x-2">
                     <Bot className="h-5 w-5" />
                     <span>Generate Content Now</span>
                   </button>
-                  {aiError && <p className="text-red-500 text-sm mt-4 flex items-center justify-center"><AlertCircle className="h-4 w-4 mr-1"/>{aiError}</p>}
+                  {generateMutation.isError && <p className="text-red-500 text-sm mt-4 flex items-center justify-center"><AlertCircle className="h-4 w-4 mr-1"/>Failed to generate content</p>}
                 </div>
-              ) : (
+              ) : aiContent ? (
                 <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                   <div className="flex justify-between items-center">
                     <h3 className="font-bold text-ocean-900">Generated Content</h3>
-                    <button onClick={generateAIContent} className="text-xs flex items-center text-ocean-600 hover:text-ocean-800">
-                      <RefreshCw className="h-3 w-3 mr-1" /> Regenerate
+                    <button onClick={() => generateMutation.mutate()} className="text-xs flex items-center text-ocean-600 hover:text-ocean-800">
+                      <RefreshCw className={`h-3 w-3 mr-1 ${generateMutation.isPending ? 'animate-spin' : ''}`} /> Regenerate
                     </button>
                   </div>
 
@@ -203,7 +184,7 @@ const ExpeditionDetail = () => {
                           <span className="text-xs font-bold uppercase text-slate-500">{platform}</span>
                           <button className="text-xs text-ocean-600 font-medium flex items-center"><Send className="h-3 w-3 mr-1"/> Publish</button>
                         </div>
-                        <p className="text-sm text-slate-700">{aiContent.social_posts[platform]}</p>
+                        <p className="text-sm text-slate-700">{aiContent.social_posts?.[platform]}</p>
                       </div>
                     ))}
                   </div>
@@ -213,6 +194,7 @@ const ExpeditionDetail = () => {
                     <div className="space-y-2">
                       <h4 className="font-semibold text-slate-700 text-sm border-b pb-1 mt-6">Website Article</h4>
                       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                        {aiContent.website_article.low_confidence && <div className="text-xs bg-amber-100 text-amber-800 p-2 rounded mb-2 font-semibold">⚠️ {aiContent.website_article.validation_warning}</div>}
                         <h5 className="font-bold text-ocean-900 leading-tight mb-2">{aiContent.website_article.headline}</h5>
                         <h6 className="text-sm font-medium text-slate-600 mb-3">{aiContent.website_article.subheading}</h6>
                         <p className="text-sm text-slate-700 line-clamp-4">{aiContent.website_article.body}</p>
@@ -230,6 +212,7 @@ const ExpeditionDetail = () => {
                     <div className="space-y-2">
                       <h4 className="font-semibold text-slate-700 text-sm border-b pb-1 mt-6">Educational Explainer</h4>
                       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                        {aiContent.educational_explainer.low_confidence && <div className="text-xs bg-amber-100 text-amber-800 p-2 rounded mb-2 font-semibold">⚠️ {aiContent.educational_explainer.validation_warning}</div>}
                         <h5 className="font-bold text-ocean-900 mb-2">{aiContent.educational_explainer.title}</h5>
                         <p className="text-sm text-slate-700 line-clamp-3 mb-4">{aiContent.educational_explainer.explainer_text}</p>
                         
@@ -256,11 +239,19 @@ const ExpeditionDetail = () => {
                     </div>
                   )}
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
       </div>
+      
+      {/* Dynamic Upload Modal based on Active Tab */}
+      <UploadModal 
+        isOpen={uploadModalOpen} 
+        onClose={() => setUploadModalOpen(false)} 
+        type={activeTab.slice(0, -1)} // 'reports' -> 'report'
+        expeditionId={id} 
+      />
     </div>
   );
 };

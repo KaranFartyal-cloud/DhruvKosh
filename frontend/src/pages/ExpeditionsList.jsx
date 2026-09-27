@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Search } from 'lucide-react';
+import * as api from '../api/expeditions';
 
 const ExpeditionsList = () => {
-  const [expeditions, setExpeditions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -17,31 +17,27 @@ const ExpeditionsList = () => {
     status: 'planned'
   });
 
-  const fetchExpeditions = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/api/expeditions`);
-      setExpeditions(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: expeditions, isLoading } = useQuery({
+    queryKey: ['expeditions'],
+    queryFn: api.getExpeditions
+  });
 
-  useEffect(() => {
-    fetchExpeditions();
-  }, []);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post(`${API_BASE_URL}/api/expeditions`, formData);
+  const mutation = useMutation({
+    mutationFn: api.createExpedition,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries(['expeditions']);
       setShowModal(false);
-      fetchExpeditions();
-    } catch (err) {
+      navigate(`/admin/expeditions/${data.id}`);
+    },
+    onError: (err) => {
       console.error(err);
       alert('Failed to create expedition');
     }
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    mutation.mutate(formData);
   };
 
   const handleChange = (e) => {
@@ -66,7 +62,7 @@ const ExpeditionsList = () => {
           </div>
         </div>
         
-        {loading ? (
+        {isLoading ? (
           <div className="p-12 text-center">
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ocean-600 mx-auto"></div>
           </div>
@@ -82,7 +78,7 @@ const ExpeditionsList = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {expeditions.map(exp => (
+              {expeditions?.map(exp => (
                 <tr key={exp.id} className="hover:bg-ice-50 transition-colors">
                   <td className="p-4">
                     <Link to={`/admin/expeditions/${exp.id}`} className="font-semibold text-ocean-700 hover:underline">
@@ -111,7 +107,7 @@ const ExpeditionsList = () => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
             <h2 className="text-xl font-bold text-slate-800 mb-4">Create New Expedition</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -143,8 +139,10 @@ const ExpeditionsList = () => {
                 </div>
               </div>
               <div className="flex justify-end space-x-3 mt-6">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-ocean-600 text-white hover:bg-ocean-700 rounded shadow">Create</button>
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded font-medium">Cancel</button>
+                <button type="submit" disabled={mutation.isPending} className="px-6 py-2 bg-ocean-600 text-white hover:bg-ocean-700 rounded-lg shadow font-medium">
+                  {mutation.isPending ? 'Creating...' : 'Create'}
+                </button>
               </div>
             </form>
           </div>
