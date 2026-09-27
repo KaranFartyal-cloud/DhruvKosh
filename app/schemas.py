@@ -303,6 +303,8 @@ class GeneratedContentBase(BaseModel):
     platform: Optional[Platform] = None
     generated_text: str
     generated_title: Optional[str] = None
+    suggested_media_id: Optional[int] = None
+    language: str = "en"
     status: GeneratedStatus = GeneratedStatus.draft
 
 class GeneratedContentCreate(GeneratedContentBase):

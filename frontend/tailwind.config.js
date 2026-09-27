@@ -6,6 +6,9 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        'hind': ['"Noto Sans Devanagari"', 'sans-serif'],
+      },
       colors: {
         ocean: {
           50: '#f0f9ff',
