@@ -45,8 +45,11 @@ def get_expeditions(
     total_count = query.count()
     items = query.order_by(DBExpedition.start_date.desc()).offset((page - 1) * page_size).limit(page_size).all()
     
+    # Serialize the list of SQLAlchemy objects to dicts
+    serialized_items = [SchemaExpedition.model_validate(item).model_dump(mode='json') for item in items]
+    
     return {
-        "items": items,
+        "items": serialized_items,
         "total_count": total_count,
         "page": page,
         "page_size": page_size
