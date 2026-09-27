@@ -8,7 +8,7 @@ import json
 
 async def test_bilingual():
     db = SessionLocal()
-    exp = db.query(Expedition).first()
+    exp = db.query(Expedition).filter(Expedition.id == 2).first()
     print(f"Testing for Expedition: {exp.name} (ID: {exp.id})")
     try:
         res = await generate_bilingual_content(exp.id, db, ["en", "hi"])

@@ -3,10 +3,115 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import GeneratedContent, Expedition, ContentCategory, Platform, GeneratedStatus
 from app.schemas import GeneratedContentCreate, GeneratedContentResponse, GeneratedContentUpdate, AllGeneratedContent
-from app.services.content_generator import generate_bilingual_content
+from app.services.content_generator import generate_bilingual_content, generate_bilingual_content_for_item
 import asyncio
 
 router = APIRouter()
+
+@router.post("/generate/item/{item_type}/{item_id}")
+async def generate_content_for_item(
+    item_type: str,
+    item_id: int, 
+    languages: list[str] = Body(["en", "hi"]),
+    db: Session = Depends(get_db)
+):
+    """Generate all content types for a standalone item (report, publication, dataset, photo, video)."""
+    
+    if item_type not in ["report", "publication", "dataset", "photo", "video", "media_item"]:
+        raise HTTPException(status_code=400, detail="Invalid item type")
+        
+    try:
+        generated = await generate_bilingual_content_for_item(item_type, item_id, db, languages)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Content generation failed: {str(e)}")
+        
+    if "error" in generated:
+        raise HTTPException(status_code=400, detail=generated["error"])
+    
+    saved_content = []
+    
+    for lang in languages:
+        lang_data = generated.get(lang, {})
+        
+        # Save Social Posts
+        social = lang_data.get("social_posts", {})
+        for platform_name in ["twitter", "instagram", "linkedin"]:
+            post_data = social.get(platform_name)
+            if post_data and not "error" in post_data:
+                content = GeneratedContent(
+                    expedition_id=None, # Standalone
+                    source_type=item_type,
+                    source_id=item_id,
+                    content_type=ContentCategory.SOCIAL_POST,
+                    platform=Platform(platform_name),
+                    language=lang,
+                    generated_text=post_data.get("text", ""),
+                    status=GeneratedStatus.DRAFT,
+                    suggested_media_id=post_data.get("suggested_media_id")
+                )
+                db.add(content)
+                saved_content.append(content)
+                
+        # Save Website Article
+        article = lang_data.get("website_article")
+        if article and not "error" in article:
+            content = GeneratedContent(
+                expedition_id=None,
+                source_type=item_type,
+                source_id=item_id,
+                content_type=ContentCategory.WEBSITE_ARTICLE,
+                language=lang,
+                generated_text=f"{article.get('headline', '')}\n\n{article.get('subheading', '')}\n\n{article.get('body', '')}",
+                status=GeneratedStatus.DRAFT,
+                suggested_media_id=article.get("suggested_media_id"),
+                metadata_json={"tags": article.get("suggested_tags", [])}
+            )
+            db.add(content)
+            saved_content.append(content)
+            
+        # Save Educational Explainer
+        edu = lang_data.get("educational_explainer")
+        if edu and not "error" in edu:
+            content = GeneratedContent(
+                expedition_id=None,
+                source_type=item_type,
+                source_id=item_id,
+                content_type=ContentCategory.EDUCATIONAL_MATERIAL,
+                language=lang,
+                generated_text=f"{edu.get('title', '')}\n\n{edu.get('explainer_text', '')}\n\nFun Fact: {edu.get('fun_fact', '')}",
+                status=GeneratedStatus.DRAFT,
+                suggested_media_id=edu.get("suggested_media_id"),
+                metadata_json={"glossary": edu.get("glossary", [])}
+            )
+            db.add(content)
+            saved_content.append(content)
+            
+        # Save Quiz
+        quiz = lang_data.get("quiz")
+        if quiz and isinstance(quiz, list):
+            content = GeneratedContent(
+                expedition_id=None,
+                source_type=item_type,
+                source_id=item_id,
+                content_type=ContentCategory.EDUCATIONAL_MATERIAL,
+                language=lang,
+                generated_text="Quiz generated (see metadata)",
+                status=GeneratedStatus.DRAFT,
+                metadata_json={"questions": quiz}
+            )
+            db.add(content)
+            saved_content.append(content)
+            
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save generated content: {str(e)}")
+        
+    return AllGeneratedContent(
+        en=generated.get("en", {}),
+        hi=generated.get("hi", {})
+    )
 
 @router.post("/generate/{expedition_id}")
 async def generate_content_for_expedition(

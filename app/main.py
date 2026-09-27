@@ -22,7 +22,8 @@ async def global_exception_handler(request, exc):
 # CORS enabled for all origins (hackathon demo)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"], # keep for non-credential requests just in case
+    allow_origin_regex=".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

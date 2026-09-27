@@ -2,176 +2,196 @@
   "en": {
     "social_posts": {
       "twitter": {
-        "text": "Exciting updates from 42nd Indian Antarctic Expedition! #NCPOR",
+        "text": "Exciting updates from 13th Indian Arctic Expedition! #NCPOR",
         "suggested_media_id": null,
         "language": "en"
       },
       "instagram": {
-        "text": "🌨️ The 42nd Indian Antarctic Expedition (IAE‑42) is on the ice in Antarctica from 15 Nov 2023 to 15 Apr 2024, focusing on climate‑change studies, ice‑shelf dynamics and ocean‑acidification monitoring.  \n\n📊 A recent publication from the team reports rapid ice‑shelf thinning in the Antarctic Peninsula – about **2 m per year** over the past decade.  \n\n❄️ #Antarctica #ClimateScience #IceShelf #OceanAcidification #IAE42",
+        "text": "🚀 Proud to share highlights from the **13th Indian Arctic Expedition (IAR‑13)**!  \n📅 **July 1 – Aug 30 2024** | 🌐 **Arctic – Svalbard archipelago**  \n\nOur team focused on **atmospheric studies** and **permafrost research**, building on long‑term climate monitoring in the region.  \n\n🧊 A new publication titled **“Accelerated permafrost degradation in the High Arctic: 2024 observations”** reports that **active‑layer thickness increased by 15 cm compared with 2023**, signaling faster permafrost loss and important implications for the global carbon cycle.  \n\n#ArcticResearch #Permafrost #",
         "suggested_media_id": null,
         "language": "en"
       },
       "linkedin": {
-        "text": "The 42nd Indian Antarctic Expedition (IAE‑42) was conducted in the Antarctic region from 15 November 2023 to 15 April 2024. The mission’s primary focus was on climate‑change research in the Antarctic Peninsula, emphasizing ice‑shelf dynamics and ocean‑acidification monitoring.\n\nA key outcome of the expedition is the publication titled **“Rapid ice shelf thinning in the Antarctic Peninsula: implications for sea level rise.”** This study provides a comprehensive analysis of ice‑shelf behavior using satellite altimetry and ground‑based radar measurements, revealing accelerated thinning rates of approximately **2 meters per year** over the past decade.",
+        "text": "The 13th Indian Arctic Expedition (Code IAR‑13) took place from 1 July 2024 to 30 August 2024 in the Arctic region, focusing on atmospheric studies and permafrost research in the Svalbard archipelago. Building on long‑term climate monitoring efforts, the expedition’s findings were summarized in the recent publication “Accelerated permafrost degradation in the High Arctic: 2024 observations.” The study reports that long‑term permafrost monitoring in Svalbard has revealed accelerated degradation patterns, with the active layer thickness increasing by 15 cm compared with 2023 measurements. These observations underscore important implications for global carbon‑cycle feedbacks.",
         "suggested_media_id": null,
         "language": "en"
       }
     },
     "website_article": {
-      "headline": "42nd Indian Antarctic Expedition Highlights Accelerated Ice Shelf Thinning",
-      "subheading": "Expedition IAE-42 studies climate change impacts on the Antarctic Peninsula, revealing thinning rates of ~2 m per year",
-      "body": "The 42nd Indian Antarctic Expedition (code IAE-42) operated in the Antarctic region from 15 November 2023 to 15 April 2024. The mission’s primary focus was on climate‑change studies in the Antarctic Peninsula, emphasizing ice shelf dynamics and ocean acidification monitoring. \n\nA key publication emerging from the expedition, titled *Rapid ice shelf thinning in the Antarctic Peninsula: implications for sea level rise*, presents a comprehensive analysis of ice shelf dynamics using satellite altimetry and ground‑based radar measurements. The study reports accelerated thinning rates of approximately 2 metres per year over the past decade, underscoring the potential contribution of these changes to global sea‑level rise.",
+      "headline": "13th Indian Arctic Expedition Highlights Accelerated Permafrost Degradation in Svalbard",
+      "subheading": "Long‑term monitoring reveals a 15 cm increase in active layer thickness during the 2024 field season",
+      "body": "The 13th Indian Arctic Expedition (code IAR‑13) conducted atmospheric studies and permafrost research in the Svalbard archipelago from 1 July to 30 August 2024. Building on previous long‑term climate monitoring efforts, the expedition’s findings were published in the paper titled “Accelerated permafrost degradation in the High Arctic: 2024 observations.” The study reports that long‑term permafrost monitoring in Svalbard shows accelerated degradation patterns with implications for global carbon cycle feedbacks. Notably, the active layer thickness increased by 15 cm compared with 2023 measurements.",
       "suggested_tags": [
-        "Indian Antarctic Expedition",
-        "IAE-42",
-        "Antarctic Peninsula",
-        "climate change",
-        "ice shelf thinning",
-        "sea level rise",
-        "satellite altimetry",
-        "radar measurements"
+        "13th Indian Arctic Expedition",
+        "IAR-13",
+        "Svalbard",
+        "permafrost degradation",
+        "active layer thickness",
+        "climate monitoring",
+        "Arctic research",
+        "global carbon cycle"
       ],
       "suggested_media_id": null,
       "language": "en"
     },
     "educational_explainer": {
-      "title": "42nd Indian Antarctic Expedition",
-      "explainer_text": "The 42nd Indian Antarctic Expedition (code IAE-42) took place in the Antarctic region from 15 November 2023 to 15 April 2024. The mission concentrated on climate‑change research in the Antarctic Peninsula, specifically studying ice‑shelf dynamics and monitoring ocean acidification. A key publication from the expedition, titled *Rapid ice shelf thinning in the Antarctic Peninsula: implications for sea level rise*, reports that satellite altimetry and ground‑based radar measurements showed accelerated ice‑shelf thinning of about 2 metres per year over the past decade.",
+      "title": "The 13th Indian Arctic Expedition (IAR‑13)",
+      "explainer_text": "The 13th Indian Arctic Expedition, coded IAR‑13, took place in the Arctic from July 1 2024 to August 30 2024. The team worked in the Svalbard archipelago, where they carried out atmospheric studies and investigated permafrost. Their research built on long‑term climate monitoring in the region. A key publication from the expedition, titled *Accelerated permafrost degradation in the High Arctic: 2024 observations*, reports that long‑term permafrost monitoring in Svalbard shows accelerated degradation. Specifically, the active layer – the uppermost part of permafrost – was measured to be 15 cm thicker than it was in 2023, highlighting possible impacts on the global carbon cycle.",
       "glossary": [
         {
-          "term": "Antarctic Peninsula",
-          "definition": "The region of Antarctica where the expedition focused its climate‑change studies."
+          "term": "Permafrost",
+          "definition": "Permanently frozen ground that was studied during the expedition."
         },
         {
-          "term": "Ice shelf dynamics",
-          "definition": "The processes involving the formation, movement, and thinning of floating ice platforms, which were examined during the expedition."
+          "term": "Active layer",
+          "definition": "The top layer of permafrost whose thickness increased by 15 cm compared to 2023 measurements."
         },
         {
-          "term": "Satellite altimetry",
-          "definition": "A remote‑sensing technique used in the expedition’s research to measure changes in ice‑shelf height."
+          "term": "Svalbard archipelago",
+          "definition": "The location in the High Arctic where the expedition conducted its research."
         },
         {
-          "term": "Ground‑based radar measurements",
-          "definition": "A method employed on the ground to assess the internal structure and thickness of ice shelves."
+          "term": "Arctic",
+          "definition": "The polar region where the expedition took place."
         },
         {
-          "term": "Ocean acidification",
-          "definition": "A change in seawater chemistry that the expedition monitored as part of its climate‑change focus."
+          "term": "Atmospheric studies",
+          "definition": "One of the scientific focuses of the expedition, involving the study of the atmosphere."
         },
         {
-          "term": "Sea level rise",
-          "definition": "The increase in global ocean levels that can result from accelerated ice‑shelf thinning, as noted in the expedition’s publication."
+          "term": "Carbon cycle feedbacks",
+          "definition": "Potential global impacts mentioned in the publication that could result from accelerated permafrost degradation."
         }
       ],
-      "fun_fact": "The expedition’s research found that ice shelves in the Antarctic Peninsula are thinning at an accelerated rate of approximately 2 metres per year, a change that could have significant implications for future sea‑level rise.",
+      "fun_fact": "During the 2024 field season, the active layer of permafrost in Svalbard was measured to be 15 cm thicker than it was in the previous year.",
       "suggested_media_id": null,
       "language": "en"
     },
     "quiz": [
       {
-        "question": "What is the code for the 42nd Indian Antarctic Expedition?",
+        "question": "Did the 13th Indian Arctic Expedition conduct permafrost research?",
         "options": [
-          "IAE-42",
-          "IAE-41",
-          "IAE-43",
-          "Not mentioned in the source"
+          "Yes",
+          "No"
         ],
         "correct_index": 0,
-        "explanation": "The expedition information lists the code as IAE-42."
+        "explanation": "The expedition summary states it performed atmospheric studies and permafrost research in the Svalbard archipelago."
       },
       {
-        "question": "According to the publication, what is the approximate rate of ice shelf thinning observed in the Antarctic Peninsula over the past decade?",
+        "question": "Did the 2024 publication report an increase in active layer thickness compared to 2023 measurements?",
         "options": [
-          "2 meters per year",
-          "1 meter per year",
-          "5 meters per year",
-          "Not mentioned in the source"
+          "Yes",
+          "No"
         ],
         "correct_index": 0,
-        "explanation": "The publication states that accelerated thinning rates are approximately 2 meters per year over the past decade."
+        "explanation": "The publication excerpt notes that active layer thickness increased by 15 cm compared to 2023 measurements."
       },
       {
-        "question": "What primary scientific focus did the 42nd Indian Antarctic Expedition have?",
+        "question": "Were any reports submitted for the 13th Indian Arctic Expedition?",
         "options": [
-          "Climate change studies, emphasizing ice shelf dynamics and ocean acidification monitoring",
-          "Geological mapping of the Antarctic interior",
-          "Biological survey of penguin populations",
-          "Not mentioned in the source"
+          "Yes",
+          "No"
         ],
-        "correct_index": 0,
-        "explanation": "The expedition summary notes a focus on climate change studies in the Antarctic Peninsula, emphasizing ice shelf dynamics and ocean acidification monitoring."
+        "correct_index": 1,
+        "explanation": "The 'REPORT EXCERPTS' section explicitly says 'No reports.'"
       }
     ]
   },
   "hi": {
     "social_posts": {
       "twitter": {
-        "text": "Exciting updates from 42nd Indian Antarctic Expedition! #NCPOR",
+        "text": "Exciting updates from 13th Indian Arctic Expedition! #NCPOR",
         "suggested_media_id": null,
         "language": "hi"
       },
       "instagram": {
-        "text": "❄️🌍 #42ndIndianAntarcticExpedition ने 15 नवंबर 2023 से 15 अप्रैल 2024 तक अंटार्कटिक पेनिनसुला में जलवायु परिवर्तन पर गहरा अध्ययन किया!  \n🧊 टीम ने बर्फ़ शेल्फ़ की गतिशीलता और महासागर अम्लता की निगरानी पर फोकस किया।  \n📊 हालिया प्रकाशन में बताया गया कि पिछले दशक में बर्फ़ शेल्फ़ लगभग **2 मीटर/साल** की तेज़ी से पतली हो रही है, जिससे समुद्र स्तर बढ़ने का खतरा है।  \n\n#ClimateScience #IceShelf #OceanAcidification #NCPOR #Antarctica 🚀✨",
+        "text": "13वीं इंडियन आर्कटिक एक्सपेडिशन (IAR‑13) ने 🌍 1 जुलाई – 30 अगस्त 2024 तक सवलबार्ड में वायुमंडलीय अध्ययन और पर्माफ्रॉस्ट रिसर्च किया। ❄️  \nनई रिपोर्ट में बताया गया कि",
         "suggested_media_id": null,
         "language": "hi"
       },
       "linkedin": {
-        "text": "42वीं भारतीय अंटार्कटिक अभियान (IAE‑42) ने 15 नवंबर 2023 से 15 अप्रैल 2024 तक अंटार्कटिक प्रायद्वीप में जलवायु परिवर्तन अध्ययन को प्राथमिकता दी। इस अवधि में बर्फ़ शेल्फ़ की गतिशीलता और समुद्री अम्लता की निगरानी पर विशेष ध्यान दिया गया।\n\nअभियान के दौरान किए गए शोध में सैटेलाइट अल्टिमेट्री और ग्राउंड‑बेस्ड रडार मापों के माध्यम से बर्फ़ शेल्फ़ के तीव्र पतलेपन की विस्तृत विश्लेषण प्रस्तुत किया गया। परिणामस्वरूप पिछले दशक में औसतन लगभग 2 मीटर प्रति वर्ष की तेज़ी से पतलेपन की दर सामने आई, जो समुद्र स्तर में वृद्धि के संभावित प्रभावों को उजागर करती है।\n\nइन",
+        "text": "13वीं भारतीय आर्कटिक एक्सपीडिशन (कोड: IAR‑13) ने 1 जुलाई 2024 से 30 अगस्त 2024 तक सवलबार्ड द्वीपसमूह में वायुमंडलीय अध्ययन एवं पर्माफ्रॉस्ट अनुसंधान किया। यह अभियान दीर्घकालिक जलवायु निगरानी के आधार पर आगे के अनुसंधान को सुदृढ़ करने के उद्देश्य से संचालित हुआ।\n\nइस यात्रा के परिणामस्वरूप प्रकाशित शोध “Accelerated permafrost degradation in the High Arctic: 2024 observations” में बताया गया है कि सवलबार्ड में दीर्घकालिक पर्माफ्रॉस्ट मॉनिटरिंग ने तेज़ी से घटते पर्माफ्रॉस्ट पैटर्न उजागर किए हैं, जो वैश्विक कार्बन",
         "suggested_media_id": null,
         "language": "hi"
       }
     },
     "website_article": {
-      "headline": "42वीं भारतीय अंटार्कटिक अभियान ने पेंनिन्सुला में बर्फ़ शेल्फ़ की तेज़ पतलीकरण की पुष्टि की",
-      "subheading": "अंटार्कटिक पेंनिन्सुला में जलवायु परिवर्तन अध्ययन, बर्फ़ शेल्फ़ गतिशीलता व महासागर अम्लता की निगरानी पर केंद्रित",
-      "body": "42वीं भारतीय अंटार्कटिक अभियान (कोड: IAE-42) ने 15 नवंबर 2023 से 15 अप्रैल 2024 तक अंटार्कटिक के पेंनिन्सुला क्षेत्र में कार्य किया। इस मिशन का मुख्य उद्देश्य जलवायु परिवर्तन से संबंधित अध्ययन करना था, जिसमें बर्फ़ शेल्फ़ की गतिशीलता और महासागर अम्लता की निगरानी पर विशेष जोर दिया गया।\n\nअभियान के दौरान प्रकाशित एक अध्ययन – “Rapid ice shelf thinning in the Antarctic Peninsula: implications for sea level rise” – ने उपग्रह अल्टिमेट्री और जमीनी रडार मापों के माध्यम से बर्फ़ शेल्फ़ की गतिशीलता का व्यापक विश्लेषण प्रस्तुत किया। इस अध्ययन के परिणामों में पिछले दशक में लगभग 2 मीटर प्रति वर्ष की तेज़ पतलीकरण दर पाई गई, जो समुद्र स्तर में वृद्धि के संभावित प्रभावों को उजागर करती है।",
+      "headline": "13वां भारतीय आर्कटिक मिशन ने सवालबार्ड में पर्माफ्रॉस्ट क्षरण में तेज़ी दर्ज की",
+      "subheading": "जुलाई‑अगस्त 2024 में आयोजित इस मिशन ने सक्रिय परत की मोटाई में 15 सेमी की वृद्धि और वैश्विक कार्बन चक्र पर संभावित प्रभाव उजागर किए",
+      "body": "13वीं भारतीय आर्कटिक एक्सपेडिशन (कोड: IAR‑13) ने 1 जुलाई से 30 अगस्त 2024 तक आर्कटिक क्षेत्र के सवालबार्ड द्वीपसमूह में अपना कार्यकाल पूरा किया। इस अवधि में टीम ने वायुमंडलीय अध्ययन एवं पर्माफ्रॉस्ट अनुसंधान पर केंद्रित व्यापक कार्य किया, जिससे पहले से चल रहे दीर्घकालिक जलवायु निगरानी कार्यक्रम को सुदृढ़ किया गया।\n\nएक प्रकाशित शोध पत्र के अनुसार, सवालबार्ड में दीर्घकालिक पर्माफ्रॉस्ट मॉनिटरिंग ने 2024 में सक्रिय परत (एक्टिव लेयर) की मोटाई में 15 सेंटीमीटर की वृद्धि दर्शायी, जो 2023 के आंकड़ों की तुलना में स्पष्ट रूप से तेज़ी का संकेत देती है। यह तेज़ी उच्च आर्कटिक में पर्माफ्रॉस्ट के बिगड़ने की प्रवृत्ति को रेखांकित करती है और वैश्विक कार्बन चक्र में संभावित प्रतिकूल प्रतिक्रिया के संकेत देती है।\n\nइस मिशन की उपलब्धियों को भारतीय विज्ञान संस्थानों और अंतरराष्ट्रीय जलवायु विशेषज्ञों ने महत्वपूर्ण माना है, क्योंकि सवालबार्ड में पर्माफ्रॉस्ट परिवर्तन का अध्ययन वैश्विक तापमान वृद्धि और कार्बन उत्सर्जन के मॉडलिंग में आवश्यक डेटा प्रदान करता है।",
       "suggested_tags": [
-        "अंटार्कटिक",
-        "जलवायु परिवर्तन",
-        "बर्फ़ शेल्फ़",
-        "समुद्र स्तर वृद्धि",
-        "भारतीय अंटार्कटिक अभियान"
+        "Indian Arctic Expedition",
+        "Permafrost Degradation",
+        "Svalbard",
+        "Climate Change",
+        "Carbon Cycle"
       ],
       "suggested_media_id": null,
       "language": "hi"
     },
     "educational_explainer": {
-      "title": "42वीं भारतीय अंटार्क्टिक एक्सपीडिशन का परिचय",
-      "explainer_text": "42वीं भारतीय अंटार्क्टिक एक्सपीडिशन (कोड IAE-42) 15 नवंबर 2023 से 15 अप्रैल 2024 तक अंटार्क्टिक में हुई। यह टीम अंटार्क्टिक पेनिनसुला क्षेत्र में जलवायु परिवर्तन के अध्ययन पर काम कर रही थी। मुख्य रूप से बर्फ़ की शेल (ice shelf) की गतिशीलता और समुद्र की अम्लता (ocean acidification) की निगरानी की गई। इस यात्रा के दौरान वैज्ञानिकों ने उपग्रह अल्टिमेट्री और जमीन‑आधारित रडार से बर्फ़ के पतले होने की दर को मापा। एक प्रकाशित अध्ययन में बताया गया कि पिछले दस सालों में बर्फ़ की परत लगभग 2 मीटर प्रति वर्ष की तेज़ी से पतली हो रही है, जिसका समुद्र स्तर में वृद्धि पर असर पड़ता है।",
+      "title": "13वां भारतीय आर्कटिक अभियान",
+      "explainer_text": "13वां भारतीय आर्कटिक अभियान (कोड IAR‑13) 1 जुलाई 2024 से 30 अगस्त 2024 तक आर्कटिक के स्वालबार्ड द्वीपसमूह में आयोजित किया गया। इस यात्रा में वायुमंडलीय अध्ययन और परमानु (परमफ़्रॉस्ट) पर शोध किया गया, जो पहले से चल रहे दीर्घकालिक जलवायु निगरानी कार्य पर आधारित था। अभियान की रिपोर्ट में बताया गया है कि स्वालबार्ड में परमानु के टूटने की गति तेज़ हो रही है। 2024 के डेटा से पता चलता है कि सक्रिय परत (active layer) की मोटाई 2023 की तुलना में 15 सेमी बढ़ गई है, जिसका वैश्विक कार्बन चक्र पर असर पड़ सकता है।",
       "glossary": [
         {
-          "term": "अंटार्क्टिक पेनिनसुला",
-          "definition": "अंटार्क्टिक महाद्वीप का वह हिस्सा जो उत्तर की ओर निकलता है और जहाँ बहुत सारा बर्फ़ीला इलाका है।"
+          "term": "आर्कटिक",
+          "definition": "ध्रुवीय क्षेत्र जहाँ बहुत ठंडा मौसम रहता है और बर्फीला परिदृश्य होता है।"
         },
         {
-          "term": "आइस शेल (Ice Shelf)",
-          "definition": "समुद्र के ऊपर फैली बर्फ़ की मोटी परत, जो जमीन से जुड़ी होती है।"
+          "term": "परमफ़्रॉस्ट",
+          "definition": "स्थायी रूप से जमी हुई मिट्टी या चट्टान, जो साल भर पिघलती नहीं।"
         },
         {
-          "term": "जलवायु परिवर्तन (Climate Change)",
-          "definition": "धरती के तापमान, मौसम और समुद्र के स्तर में दीर्घकालिक बदलाव।"
+          "term": "सक्रिय परत",
+          "definition": "परमफ़्रॉस्ट के ऊपर की वह सतह की परत जो गर्मियों में पिघलती है।"
         },
         {
-          "term": "समुद्री अम्लता (Ocean Acidification)",
-          "definition": "समुद्र में कार्बन डाइऑक्साइड बढ़ने से पानी का pH कम होना।"
+          "term": "कार्बन चक्र",
+          "definition": "पृथ्वी पर कार्बन के उत्पन्न, संचरण और पुनः उपयोग की प्रक्रिया।"
         },
         {
-          "term": "उपग्रह अल्टिमेट्री (Satellite Altimetry)",
-          "definition": "उपग्रहों के माध्यम से पृथ्वी की सतह या बर्फ़ की ऊँचाई को मापने की तकनीक।"
-        },
-        {
-          "term": "जमीनी रडार (Ground‑Based Radar)",
-          "definition": "जमीन पर स्थापित रडार उपकरण जो बर्फ़ की मोटाई और संरचना को मापते हैं।"
-        },
-        {
-          "term": "समुद्र स्तर में वृद्धि (Sea Level Rise)",
-          "definition": "ग्लोबली समुद्र के औसत स्तर का बढ़ना, अक्सर बर्फ़ के पिघलने से।"
+          "term": "दीर्घकालिक जलवायु निगरानी",
+          "definition": "समय के साथ लगातार मौसम और पर्यावरणीय डेटा एकत्र करने की प्रक्रिया।"
         }
       ],
-      "fun_fact": "अंटार्क्टिक पेनिनसुला में बर्फ़ की परत पिछले दशक में लगभग 2 मीटर प्रति वर्ष की दर से तेज़ी से पतली हो रही है।",
+      "fun_fact": "2024 में स्वालबार्ड में सक्रिय परत की मोटाई 2023 की तुलना में 15 सेमी बढ़ी, जो परमानु के तेज़ टूटने का संकेत है।",
       "suggested_media_id": null,
       "language": "hi"
     },
-    "quiz": []
+    "quiz": [
+      {
+        "question": "13वीं भारतीय आर्कटिक एक्सपीडिशन का कोड क्या है?",
+        "options": [
+          "IAR-13",
+          "IAR-12",
+          "IAR-14",
+          "IAR-15"
+        ],
+        "correct_index": 0,
+        "explanation": "स्रोत में बताया गया है कि इस अभियान का कोड IAR-13 है।"
+      },
+      {
+        "question": "13वीं भारतीय आर्कटिक एक्सपीडिशन ने किस क्षेत्र में अध्ययन किए?",
+        "options": [
+          "अंटार्कटिका",
+          "आर्कटिक",
+          "हिमालय",
+          "समुद्र"
+        ],
+        "correct_index": 1,
+        "explanation": "एक्सपीडिशन का क्षेत्र ‘आर्कटिक’ बताया गया है, विशेष रूप से सवलबार्ड द्वीपसमूह में।"
+      },
+      {
+        "question": "प्रकाशित अध्ययन के अनुसार 2024 में सक्रिय परत की मोटाई में 2023 की तुलना में कितनी वृद्धि हुई?",
+        "options": [
+          "5 सेमी",
+          "10 सेमी",
+          "15 सेमी",
+          "20 सेमी"
+        ],
+        "correct_index": 2,
+        "explanation": "प्रकाशन में कहा गया है कि सक्रिय परत की मोटाई 2023 की तुलना में 15 सेमी बढ़ी।"
+      }
+    ]
   }
 }

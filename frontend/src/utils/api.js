@@ -471,29 +471,44 @@ export const contentAPI = {
    * compositeId should be "report-{id}" from which we find the expedition.
    */
   generatePosts: async (compositeId) => {
-    const [, rawId] = String(compositeId).split('-');
+    const [type, rawId] = String(compositeId).split('-');
     const id = parseInt(rawId);
 
-    // Find which expedition this item belongs to
-    let expeditionId = null;
-    try {
-      const res = await api.get(API_CONFIG.endpoints.expeditions, { params: { page_size: 100 } });
-      const expItems = res.data?.items || [];
-      for (const exp of expItems) {
-        const full = await api.get(API_CONFIG.endpoints.expeditionFull(exp.id));
-        const found =
-          (full.data?.reports || []).find(r => r.id === id) ||
-          (full.data?.media_items || []).find(m => m.id === id);
-        if (found) { expeditionId = exp.id; break; }
+    // Backend now supports generating for a specific item
+    // Make sure we have the new endpoint in API_CONFIG
+    let res;
+    if (API_CONFIG.endpoints.generateItemContent) {
+      try {
+        res = await api.post(API_CONFIG.endpoints.generateItemContent(type, id));
+      } catch (err) {
+        // Fallback logic if backend isn't updated yet or if it fails
+        console.warn("generateItemContent failed, falling back to expedition generation", err);
       }
-    } catch { /* continue */ }
-
-    if (!expeditionId) {
-      expeditionId = await ensureDefaultExpedition();
     }
-    if (!expeditionId) throw new Error('Could not determine expedition for generation');
+    
+    // Fallback: Find which expedition this item belongs to
+    if (!res) {
+      let expeditionId = null;
+      try {
+        const fallbackRes = await api.get(API_CONFIG.endpoints.expeditions, { params: { page_size: 100 } });
+        const expItems = fallbackRes.data?.items || [];
+        for (const exp of expItems) {
+          const full = await api.get(API_CONFIG.endpoints.expeditionFull(exp.id));
+          const found =
+            (full.data?.reports || []).find(r => r.id === id) ||
+            (full.data?.media_items || []).find(m => m.id === id);
+          if (found) { expeditionId = exp.id; break; }
+        }
+      } catch { /* continue */ }
 
-    const res = await api.post(API_CONFIG.endpoints.generateContent(expeditionId));
+      if (!expeditionId) {
+        expeditionId = await ensureDefaultExpedition();
+      }
+      if (!expeditionId) throw new Error('Could not determine expedition for generation');
+
+      res = await api.post(API_CONFIG.endpoints.generateContent(expeditionId));
+    }
+
     // Backend returns { social_posts, website_article, educational_explainer, quiz }
     const generated = res.data;
     const posts = [];

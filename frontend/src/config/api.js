@@ -39,6 +39,7 @@ export const API_CONFIG = {
 
     // AI Content Generation
     generateContent:   (expeditionId) => `/api/generated/generate/${expeditionId}`,
+    generateItemContent: (type, id) => `/api/generated/generate/item/${type}/${id}`,
     generatedByExpedition: (expeditionId) => `/api/generated/expedition/${expeditionId}/content`,
     generatedItemById: (id) => `/api/generated/generated-content/${id}`,
     updateGenerated:   (id) => `/api/generated/generated-content/${id}`,

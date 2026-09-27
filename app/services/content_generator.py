@@ -58,6 +58,32 @@ def gather_source_material(expedition_id: int, db_session) -> str:
         
     return truncate_words("\n".join(sections), 4000)
 
+def gather_item_source_material(item_type: str, item_id: int, db_session) -> str:
+    from app.models import ExpeditionReport, ScientificDataset, Publication, MediaItem
+    sections = []
+    
+    if item_type == "report":
+        report = db_session.query(ExpeditionReport).filter(ExpeditionReport.id == item_id).first()
+        if report:
+            sections.append(f"REPORT\nTitle: {report.title}\nContent:\n{report.extracted_text or 'N/A'}")
+    elif item_type == "dataset":
+        dataset = db_session.query(ScientificDataset).filter(ScientificDataset.id == item_id).first()
+        if dataset:
+            sections.append(f"DATASET\nTitle: {dataset.title}\nDescription: {dataset.description or 'N/A'}")
+    elif item_type == "publication":
+        pub = db_session.query(Publication).filter(Publication.id == item_id).first()
+        if pub:
+            sections.append(f"PUBLICATION\nTitle: {pub.title}\nAbstract:\n{pub.abstract or 'N/A'}")
+    elif item_type in ["photo", "video", "media_item"]:
+        media = db_session.query(MediaItem).filter(MediaItem.id == item_id).first()
+        if media:
+            sections.append(f"MEDIA\nTitle: {media.title}\nDescription:\n{media.description or 'N/A'}")
+            
+    if not sections:
+        return ""
+        
+    return truncate_words("\n".join(sections), 4000)
+
 ANTI_HALLUCINATION_INSTRUCTION = """
 You must ONLY state facts that appear in the provided source material below. Do not invent dates, locations, findings, names, or statistics.
 """
@@ -225,6 +251,61 @@ async def generate_bilingual_content(expedition_id: int, db_session, languages: 
     results = await asyncio.gather(*tasks, return_exceptions=True)
     
     # Pack results by language
+    response = {}
+    num_tasks_per_lang = 6
+    for i, lang in enumerate(languages):
+        base_idx = i * num_tasks_per_lang
+        lang_res = results[base_idx:base_idx+num_tasks_per_lang]
+        response[lang] = {
+            "social_posts": {
+                "twitter": lang_res[0] if not isinstance(lang_res[0], Exception) else {"error": str(lang_res[0])},
+                "instagram": lang_res[1] if not isinstance(lang_res[1], Exception) else {"error": str(lang_res[1])},
+                "linkedin": lang_res[2] if not isinstance(lang_res[2], Exception) else {"error": str(lang_res[2])}
+            },
+            "website_article": lang_res[3] if not isinstance(lang_res[3], Exception) else {"error": str(lang_res[3])},
+            "educational_explainer": lang_res[4] if not isinstance(lang_res[4], Exception) else {"error": str(lang_res[4])},
+            "quiz": lang_res[5] if not isinstance(lang_res[5], Exception) else []
+        }
+    return response
+
+async def generate_bilingual_content_for_item(item_type: str, item_id: int, db_session, languages: list = ["en", "hi"]) -> Dict:
+    source_material = gather_item_source_material(item_type, item_id, db_session)
+    if not source_material: return {"error": "No source material found for this item"}
+        
+    # Find item name
+    item_name = f"{item_type.capitalize()} Item"
+    from app.models import ExpeditionReport, ScientificDataset, Publication, MediaItem
+    media_items = []
+    
+    if item_type == "report":
+        obj = db_session.query(ExpeditionReport).filter(ExpeditionReport.id == item_id).first()
+    elif item_type == "dataset":
+        obj = db_session.query(ScientificDataset).filter(ScientificDataset.id == item_id).first()
+    elif item_type == "publication":
+        obj = db_session.query(Publication).filter(Publication.id == item_id).first()
+    elif item_type in ["photo", "video", "media_item"]:
+        obj = db_session.query(MediaItem).filter(MediaItem.id == item_id).first()
+        if obj: media_items = [obj] # Treat the item itself as the suggested media
+    else:
+        obj = None
+        
+    if obj and hasattr(obj, 'title'):
+        item_name = obj.title
+        
+    # We use item_name in place of expedition_name
+    tasks = []
+    for lang in languages:
+        tasks.extend([
+            _run_with_timeout(asyncio.to_thread(generate_social_post, source_material, item_name, "twitter", lang, media_items)),
+            _run_with_timeout(asyncio.to_thread(generate_social_post, source_material, item_name, "instagram", lang, media_items)),
+            _run_with_timeout(asyncio.to_thread(generate_social_post, source_material, item_name, "linkedin", lang, media_items)),
+            _run_with_timeout(asyncio.to_thread(generate_website_article, source_material, item_name, lang, media_items)),
+            _run_with_timeout(asyncio.to_thread(generate_educational_explainer, source_material, item_name, "school", lang, media_items)),
+            _run_with_timeout(asyncio.to_thread(generate_quiz_from_content, source_material, lang))
+        ])
+        
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
     response = {}
     num_tasks_per_lang = 6
     for i, lang in enumerate(languages):
