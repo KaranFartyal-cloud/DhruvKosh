@@ -228,7 +228,7 @@ async def _run_with_timeout(coro, timeout=60):
     except Exception as e:
         return Exception(str(e))
 
-async def generate_bilingual_content(expedition_id: int, db_session, languages: list = ["en", "hi"]) -> Dict:
+async def generate_bilingual_content(expedition_id: int, db_session, languages: list = ["en"]) -> Dict:
     source_material = gather_source_material(expedition_id, db_session)
     if not source_material: return {"error": "No source material found"}
         
@@ -268,7 +268,7 @@ async def generate_bilingual_content(expedition_id: int, db_session, languages: 
         }
     return response
 
-async def generate_bilingual_content_for_item(item_type: str, item_id: int, db_session, languages: list = ["en", "hi"]) -> Dict:
+async def generate_bilingual_content_for_item(item_type: str, item_id: int, db_session, languages: list = ["en"]) -> Dict:
     source_material = gather_item_source_material(item_type, item_id, db_session)
     if not source_material: return {"error": "No source material found for this item"}
         

@@ -553,10 +553,9 @@ export const contentAPI = {
       }
     };
 
-    if (generated.en || generated.hi) {
-      // New bilingual format
-      if (generated.en) processLangContent(generated.en, 'en');
-      if (generated.hi) processLangContent(generated.hi, 'hi');
+    if (generated.en) {
+      // Process only English for now
+      processLangContent(generated.en, 'en');
     } else {
       // Fallback for old format
       processLangContent(generated);

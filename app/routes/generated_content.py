@@ -12,7 +12,7 @@ router = APIRouter()
 async def generate_content_for_item(
     item_type: str,
     item_id: int, 
-    languages: list[str] = Body(["en", "hi"]),
+    languages: list[str] = Body(["en"]),
     db: Session = Depends(get_db)
 ):
     """Generate all content types for a standalone item (report, publication, dataset, photo, video)."""
@@ -116,7 +116,7 @@ async def generate_content_for_item(
 @router.post("/generate/{expedition_id}")
 async def generate_content_for_expedition(
     expedition_id: int, 
-    languages: list[str] = Body(["en", "hi"]),
+    languages: list[str] = Body(["en"]),
     db: Session = Depends(get_db)
 ):
     """Generate all content types for an expedition."""
