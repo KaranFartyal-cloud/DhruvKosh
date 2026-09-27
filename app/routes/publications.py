@@ -93,6 +93,10 @@ async def upload_publication(
     
     return publication
 
+@router.get("", response_model=list[PublicationResponse])
+def get_publications(db: Session = Depends(get_db)):
+    return db.query(Publication).all()
+
 @router.get("/{publication_id}", response_model=PublicationResponse)
 def get_publication(publication_id: int, db: Session = Depends(get_db)):
     publication = db.query(Publication).filter(Publication.id == publication_id).first()

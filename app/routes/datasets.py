@@ -114,6 +114,10 @@ async def upload_dataset(
     # Return the dataset object directly
     return dataset
 
+@router.get("", response_model=list[ScientificDatasetResponse])
+def get_datasets(db: Session = Depends(get_db)):
+    return db.query(ScientificDataset).all()
+
 @router.get("/{dataset_id}", response_model=ScientificDatasetResponse)
 def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
     dataset = db.query(ScientificDataset).filter(ScientificDataset.id == dataset_id).first()
