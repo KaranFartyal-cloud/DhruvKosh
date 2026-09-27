@@ -289,6 +289,9 @@ async def generate_bilingual_content_for_item(item_type: str, item_id: int, db_s
     else:
         obj = None
         
+    if not media_items:
+        media_items = db_session.query(MediaItem).limit(100).all()
+        
     if obj and hasattr(obj, 'title'):
         item_name = obj.title
         
