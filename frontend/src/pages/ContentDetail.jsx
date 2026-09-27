@@ -366,6 +366,46 @@ const ContentDetail = () => {
                     {postsByPlatform[activeTab].status}
                   </span>
                 </div>
+                
+                {postsByPlatform[activeTab].suggested_media_id && (
+                  <div className="mb-4 bg-ncpor-bg/30 p-4 rounded-xl border border-ncpor-divider flex items-center gap-4">
+                    <div className="w-16 h-16 rounded overflow-hidden bg-ncpor-panel flex items-center justify-center flex-shrink-0">
+                      <img 
+                        src={`${import.meta.env.VITE_API_URL || 'https://dhruvkosh.onrender.com'}/api/files/media/${postsByPlatform[activeTab].suggested_media_id}/thumbnail`}
+                        alt="Suggested Media"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect fill="#101E22" width="64" height="64"/><text fill="#7C949A" font-family="Arial" font-size="10" x="50%" y="50%" text-anchor="middle">Media</text></svg>');
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-ncpor-primary mb-1">Suggested Media Attachment</h4>
+                      <div className="flex gap-3">
+                        <a 
+                          href={`${import.meta.env.VITE_API_URL || 'https://dhruvkosh.onrender.com'}/api/files/media/${postsByPlatform[activeTab].suggested_media_id}`}
+                          target="_blank" rel="noreferrer"
+                          className="text-xs text-ncpor-accent hover:underline flex items-center gap-1"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                          View Full
+                        </a>
+                        <button 
+                          onClick={() => {
+                            const newText = (editingPosts[postsByPlatform[activeTab].id] || postsByPlatform[activeTab].generated_text) + `\n[Attached Media ID: ${postsByPlatform[activeTab].suggested_media_id}]`;
+                            handlePostEdit(postsByPlatform[activeTab].id, newText);
+                          }}
+                          className="text-xs text-ncpor-secondary hover:text-ncpor-primary flex items-center gap-1"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                          Attach to Post
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="relative group">
                   <textarea
                     value={editingPosts[postsByPlatform[activeTab].id] || postsByPlatform[activeTab].generated_text}

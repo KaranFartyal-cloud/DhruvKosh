@@ -528,7 +528,8 @@ export const contentAPI = {
               id: pid++, 
               platform: platform + (langLabel ? `-${langLabel}` : ''), 
               generated_text: text, 
-              status: 'draft' 
+              status: 'draft',
+              suggested_media_id: data.suggested_media_id || null
             });
           }
         });
@@ -539,7 +540,8 @@ export const contentAPI = {
           platform: 'website' + (langLabel ? `-${langLabel}` : ''), 
           generated_text: langContent.website_article.body, 
           status: 'draft', 
-          title: langContent.website_article.headline 
+          title: langContent.website_article.headline,
+          suggested_media_id: langContent.website_article.suggested_media_id || null
         });
       }
       if (langContent.educational_explainer?.explainer_text) {
@@ -548,7 +550,8 @@ export const contentAPI = {
           platform: 'educational' + (langLabel ? `-${langLabel}` : ''), 
           generated_text: langContent.educational_explainer.explainer_text, 
           status: 'draft', 
-          title: langContent.educational_explainer.title 
+          title: langContent.educational_explainer.title,
+          suggested_media_id: langContent.educational_explainer.suggested_media_id || null
         });
       }
     };

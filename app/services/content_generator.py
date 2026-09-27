@@ -143,9 +143,9 @@ def suggest_media(generated_text: str, media_items) -> int:
 
 def generate_social_post(source_material: str, expedition_name: str, platform: str, language: str = "en", media_items=None) -> Dict:
     platform_prompts = {
-        "twitter": f"Generate a Twitter post (max 280 characters). {ANTI_HALLUCINATION_INSTRUCTION} Punchy, 2-3 hashtags.",
-        "instagram": f"Generate an Instagram post. {ANTI_HALLUCINATION_INSTRUCTION} Casual, emojis, 4-5 hashtags.",
-        "linkedin": f"Generate a LinkedIn post. {ANTI_HALLUCINATION_INSTRUCTION} Professional tone, no emojis."
+        "twitter": f"Generate a Twitter post (max 280 characters). {ANTI_HALLUCINATION_INSTRUCTION} Punchy, include 5-8 highly relevant hashtags.",
+        "instagram": f"Generate an Instagram post. {ANTI_HALLUCINATION_INSTRUCTION} Casual, emojis, include 5-8 highly relevant hashtags.",
+        "linkedin": f"Generate a LinkedIn post. {ANTI_HALLUCINATION_INSTRUCTION} Professional tone, no emojis, include 5-8 relevant hashtags."
     }
     system_prompt = platform_prompts.get(platform, platform_prompts["twitter"])
     if language == "hi":
@@ -173,7 +173,7 @@ def generate_social_post(source_material: str, expedition_name: str, platform: s
         raise e
 
 def generate_website_article(source_material: str, expedition_name: str, language: str = "en", media_items=None) -> Dict:
-    system_prompt = f"Generate a website news article. {ANTI_HALLUCINATION_INSTRUCTION}\nReturn JSON keys: headline, subheading, body, suggested_tags."
+    system_prompt = f"Generate a website news article. {ANTI_HALLUCINATION_INSTRUCTION}\nReturn JSON keys: headline, subheading, body, suggested_tags. Make sure to provide 5-8 highly relevant SEO keywords in suggested_tags."
     if language == "hi":
         system_prompt += "\nWrite NATIVELY in Hindi (Devanagari). Make it professional and journalistic."
         
