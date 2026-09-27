@@ -160,7 +160,7 @@ Requirements:
 Return ONLY the post text, no preamble."""
     }
     
-    max_tokens_map = {"twitter": 100, "instagram": 200, "linkedin": 300}
+    max_tokens_map = {"twitter": 250, "instagram": 300, "linkedin": 400}
     max_lens = {"twitter": 280, "instagram": 2200, "linkedin": 3000}
     
     system_prompt = platform_prompts.get(platform, platform_prompts["twitter"])
@@ -170,11 +170,18 @@ Return ONLY the post text, no preamble."""
         content = call_groq_with_retry([
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}
-        ], max_tokens=max_tokens_map.get(platform, 200))
+        ], max_tokens=max_tokens_map.get(platform, 300))
         
         generated_text = content.strip()
-        if ":" in generated_text and len(generated_text.split(":")[0]) < 20:
-            generated_text = generated_text.split(":", 1)[1].strip()
+        # Clean up any prefix like "Twitter Post:" or "Here is the post:"
+        if ":" in generated_text and len(generated_text.split(":")[0]) < 25:
+            split_text = generated_text.split(":", 1)[1].strip()
+            if split_text:  # Only use it if it's not empty
+                generated_text = split_text
+                
+        # If still empty for some reason, return a safe fallback
+        if not generated_text:
+            return f"Exciting updates from the {expedition_name}! #NCPOR #Science #PolarResearch"
             
         is_valid, reason = validate_grounding(generated_text, source_material, expedition_name, is_social=True, max_len=max_lens.get(platform))
         if not is_valid:
