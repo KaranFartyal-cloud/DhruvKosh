@@ -29,7 +29,7 @@ class ThreadsPublisher(BasePublisher):
             # Step 1: Create media container
             container_url = f"https://graph.threads.net/{self.api_version}/{self.user_id}/threads"
             
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 container_res = await client.post(container_url, params=params)
                 container_data = container_res.json()
                 
@@ -41,6 +41,10 @@ class ThreadsPublisher(BasePublisher):
                 if not creation_id:
                     return PublishResult(success=False, error="Failed to create threads container")
                     
+                # Add a small delay as Threads API sometimes takes time to process the container
+                import asyncio
+                await asyncio.sleep(3)
+                
                 # Step 2: Publish the container
                 publish_url = f"https://graph.threads.net/{self.api_version}/{self.user_id}/threads_publish"
                 
