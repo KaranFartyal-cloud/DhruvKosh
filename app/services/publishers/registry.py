@@ -7,6 +7,8 @@ from app.services.publishers.mastodon_publisher import MastodonPublisher
 from app.services.publishers.bluesky_publisher import BlueskyPublisher
 from app.services.publishers.linkedin_publisher import LinkedInPublisher
 from app.services.publishers.facebook_publisher import FacebookPublisher
+from app.services.publishers.instagram_publisher import InstagramPublisher
+from app.services.publishers.threads_publisher import ThreadsPublisher
 from app.services.publishers.dry_run_publisher import DryRunPublisher
 
 PUBLISHERS: Dict[str, Type[BasePublisher]] = {
@@ -16,7 +18,8 @@ PUBLISHERS: Dict[str, Type[BasePublisher]] = {
     "bluesky": BlueskyPublisher,
     "linkedin": LinkedInPublisher,
     "facebook": FacebookPublisher,
-    # "instagram": InstagramPublisher, # Stub for future
+    "instagram": InstagramPublisher,
+    "threads": ThreadsPublisher,
 }
 
 def get_publisher(platform: str) -> BasePublisher:
@@ -42,6 +45,10 @@ def get_publisher(platform: str) -> BasePublisher:
     if platform == "linkedin" and not (os.getenv("LINKEDIN_ACCESS_TOKEN") and os.getenv("LINKEDIN_AUTHOR_URN")):
         return DryRunPublisher()
     if platform == "facebook" and not (os.getenv("FACEBOOK_PAGE_ID") and os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN")):
+        return DryRunPublisher()
+    if platform == "instagram" and not (os.getenv("INSTAGRAM_ACCOUNT_ID") and os.getenv("INSTAGRAM_ACCESS_TOKEN")):
+        return DryRunPublisher()
+    if platform == "threads" and not (os.getenv("THREADS_USER_ID") and os.getenv("THREADS_ACCESS_TOKEN")):
         return DryRunPublisher()
         
     return publisher
@@ -72,5 +79,13 @@ def get_available_platforms() -> list[str]:
     # Check Facebook
     if os.getenv("FACEBOOK_PAGE_ID") and os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN"):
         platforms.append("facebook")
+        
+    # Check Instagram
+    if os.getenv("INSTAGRAM_ACCOUNT_ID") and os.getenv("INSTAGRAM_ACCESS_TOKEN"):
+        platforms.append("instagram")
+        
+    # Check Threads
+    if os.getenv("THREADS_USER_ID") and os.getenv("THREADS_ACCESS_TOKEN"):
+        platforms.append("threads")
         
     return platforms

@@ -51,7 +51,7 @@ const PublishPanel = ({ post, onPublishSuccess }) => {
     }
   };
   
-  const allPlatforms = ['twitter', 'telegram', 'mastodon', 'bluesky', 'linkedin', 'facebook', 'instagram'];
+  const allPlatforms = ['twitter', 'telegram', 'mastodon', 'bluesky', 'linkedin', 'facebook', 'instagram', 'threads'];
   const isApproved = post.status === 'approved' || post.status === 'published';
 
   return (

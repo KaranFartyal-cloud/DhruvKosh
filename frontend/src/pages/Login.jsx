@@ -36,6 +36,7 @@ const Login = () => {
       } else {
         await authAPI.register(formData);
         // After registration, switch to login
+        
         setIsLogin(true);
         setError('Registration successful! Please login.');
       }
@@ -48,33 +49,31 @@ const Login = () => {
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-ncpor-bg px-4 py-12 font-sans">
-      <div className="max-w-md w-full bg-ncpor-card border border-ncpor-border rounded-xl shadow-2xl p-8">
+    <div className="min-h-screen flex items-center justify-center bg-ocean-50 px-4">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-display text-ncpor-textPrimary mb-2 tracking-wide">NCPOR</h1>
-          <p className="text-sm font-medium tracking-[0.2em] text-ncpor-textSecondary uppercase">Outreach</p>
-          <div className="mt-4 w-12 h-0.5 bg-ncpor-accent mx-auto"></div>
-          <p className="mt-6 text-ncpor-textMuted text-sm">Polar Science Knowledge Repository</p>
+          <h1 className="text-3xl font-bold text-ocean-900 mb-2">NCPOR Portal</h1>
+          <p className="text-ocean-600">Polar Science Outreach & Knowledge Repository</p>
         </div>
         
         {error && (
-          <div className={`mb-6 px-4 py-3 rounded-lg text-sm font-medium ${
+          <div className={`mb-4 px-4 py-3 rounded ${
             error.includes('successful') 
-              ? 'bg-ncpor-success/10 border border-ncpor-success/20 text-ncpor-success' 
-              : 'bg-ncpor-warning/10 border border-ncpor-warning/20 text-ncpor-warning'
+              ? 'bg-green-50 border border-green-200 text-green-700' 
+              : 'bg-red-50 border border-red-200 text-red-700'
           }`}>
             {error}
           </div>
         )}
         
-        <h2 className="text-xl font-display text-ncpor-textPrimary mb-6">
-          {isLogin ? 'Sign In' : 'Register'}
+        <h2 className="text-xl font-semibold text-ocean-900 mb-6">
+          {isLogin ? 'Login' : 'Register'}
         </h2>
         
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div>
-              <label className="block text-sm font-medium text-ncpor-textSecondary mb-2">
+              <label className="block text-sm font-medium text-ocean-700 mb-2">
                 Name
               </label>
               <input
@@ -83,14 +82,14 @@ const Login = () => {
                 value={formData.name}
                 onChange={handleChange}
                 required={!isLogin}
-                className="w-full px-4 py-2.5 bg-ncpor-bgSecondary text-ncpor-textPrimary border border-ncpor-border rounded-lg focus:outline-none focus:ring-1 focus:ring-ncpor-accent focus:border-ncpor-accent transition-all"
+                className="w-full px-3 py-2 border border-ocean-300 rounded-md focus:outline-none focus:ring-2 focus:ring-ocean-500"
                 placeholder="Your full name"
               />
             </div>
           )}
           
           <div>
-            <label className="block text-sm font-medium text-ncpor-textSecondary mb-2">
+            <label className="block text-sm font-medium text-ocean-700 mb-2">
               Email
             </label>
             <input
@@ -99,13 +98,13 @@ const Login = () => {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2.5 bg-ncpor-bgSecondary text-ncpor-textPrimary border border-ncpor-border rounded-lg focus:outline-none focus:ring-1 focus:ring-ncpor-accent focus:border-ncpor-accent transition-all"
+              className="w-full px-3 py-2 border border-ocean-300 rounded-md focus:outline-none focus:ring-2 focus:ring-ocean-500"
               placeholder="your.email@example.com"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-ncpor-textSecondary mb-2">
+            <label className="block text-sm font-medium text-ocean-700 mb-2">
               Password
             </label>
             <input
@@ -114,21 +113,21 @@ const Login = () => {
               value={formData.password}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2.5 bg-ncpor-bgSecondary text-ncpor-textPrimary border border-ncpor-border rounded-lg focus:outline-none focus:ring-1 focus:ring-ncpor-accent focus:border-ncpor-accent transition-all"
+              className="w-full px-3 py-2 border border-ocean-300 rounded-md focus:outline-none focus:ring-2 focus:ring-ocean-500"
               placeholder="••••••••"
             />
           </div>
           
           {!isLogin && (
             <div>
-              <label className="block text-sm font-medium text-ncpor-textSecondary mb-2">
+              <label className="block text-sm font-medium text-ocean-700 mb-2">
                 Role
               </label>
               <select
                 name="role"
                 value={formData.role}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-ncpor-bgSecondary text-ncpor-textPrimary border border-ncpor-border rounded-lg focus:outline-none focus:ring-1 focus:ring-ncpor-accent focus:border-ncpor-accent transition-all"
+                className="w-full px-3 py-2 border border-ocean-300 rounded-md focus:outline-none focus:ring-2 focus:ring-ocean-500"
               >
                 <option value="viewer">Viewer</option>
                 <option value="editor">Editor</option>
@@ -140,30 +139,30 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-ncpor-accent text-ncpor-bg py-2.5 px-4 rounded-lg font-medium hover:bg-ncpor-lightIce disabled:opacity-50 disabled:cursor-not-allowed transition-all mt-2 shadow-[0_0_15px_rgba(69,214,194,0.15)] hover:shadow-[0_0_20px_rgba(69,214,194,0.3)] hover:-translate-y-0.5 duration-200"
+            className="w-full bg-ocean-600 text-white py-2 px-4 rounded-md hover:bg-ocean-700 disabled:bg-ocean-300 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
+            {loading ? 'Processing...' : (isLogin ? 'Login' : 'Register')}
           </button>
         </form>
         
-        <div className="mt-8 text-center">
+        <div className="mt-6 text-center">
           <button
             onClick={() => {
               setIsLogin(!isLogin);
               setError(null);
             }}
-            className="text-ncpor-textSecondary hover:text-ncpor-accent transition-colors text-sm font-medium"
+            className="text-ocean-600 hover:text-ocean-800"
           >
-            {isLogin ? "Don't have an account? Register" : 'Already have an account? Sign In'}
+            {isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}
           </button>
         </div>
         
-        <div className="mt-8 pt-6 border-t border-ncpor-border">
-          <p className="text-xs tracking-wider uppercase text-ncpor-textMuted text-center mb-4">Demo Credentials</p>
-          <div className="text-xs text-ncpor-textMuted space-y-2 text-center font-mono bg-ncpor-bgSecondary/50 p-4 rounded-lg border border-ncpor-border/50">
-            <p><span className="text-ncpor-textSecondary">Admin:</span> admin@ncpor.gov.in / admin123</p>
-            <p><span className="text-ncpor-textSecondary">Editor:</span> editor@ncpor.gov.in / editor123</p>
-            <p><span className="text-ncpor-textSecondary">Viewer:</span> viewer@ncpor.gov.in / viewer123</p>
+        <div className="mt-6 pt-6 border-t border-ocean-200">
+          <p className="text-sm text-ocean-600 text-center mb-2">Demo Credentials:</p>
+          <div className="text-xs text-ocean-500 space-y-1">
+            <p>Admin: admin@ncpor.gov.in / admin123</p>
+            <p>Editor: editor@ncpor.gov.in / editor123</p>
+            <p>Viewer: viewer@ncpor.gov.in / viewer123</p>
           </div>
         </div>
       </div>
