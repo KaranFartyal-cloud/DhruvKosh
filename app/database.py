@@ -26,3 +26,22 @@ def get_db():
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    
+    # Auto-migration to add missing columns to existing database
+    from sqlalchemy import text
+    try:
+        with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+            columns_to_add = [
+                "ADD COLUMN source_type VARCHAR DEFAULT 'expedition'",
+                "ADD COLUMN source_id INTEGER",
+                "ADD COLUMN generated_title VARCHAR",
+                "ADD COLUMN suggested_media_id INTEGER",
+                "ADD COLUMN publish_status VARCHAR"
+            ]
+            for col in columns_to_add:
+                try:
+                    conn.execute(text(f"ALTER TABLE generated_content {col}"))
+                except Exception:
+                    pass
+    except Exception as e:
+        print(f"Migration error: {e}")
