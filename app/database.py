@@ -36,7 +36,8 @@ def init_db():
                 "ADD COLUMN source_id INTEGER",
                 "ADD COLUMN generated_title VARCHAR",
                 "ADD COLUMN suggested_media_id INTEGER",
-                "ADD COLUMN publish_status VARCHAR"
+                "ADD COLUMN publish_status VARCHAR",
+                "ADD COLUMN language VARCHAR DEFAULT 'en'"
             ]
             for col in columns_to_add:
                 try:
