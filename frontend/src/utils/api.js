@@ -22,7 +22,7 @@ import API_CONFIG from '../config/api';
 const api = axios.create({
   baseURL: API_CONFIG.baseURL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 60000, // 60 s — Render cold starts can be slow
+  timeout: 180000, // 180 s — Render cold starts + AI generation can be slow
 });
 
 // Attach JWT if available
