@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { contentAPI } from '../utils/api';
+import PublishPanel from '../components/PublishPanel';
 
 const ContentDetail = () => {
   const { id } = useParams();
@@ -446,6 +447,9 @@ const ContentDetail = () => {
                   </button>
                 )}
               </div>
+              
+              {/* Publish Panel Integration */}
+              <PublishPanel post={postsByPlatform[activeTab]} />
             </div>
           )}
           

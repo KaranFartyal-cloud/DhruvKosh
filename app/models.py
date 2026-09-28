@@ -78,6 +78,13 @@ class Role(str, enum.Enum):
     viewer = "viewer"
     public = "public"
 
+class PublishLogStatus(str, enum.Enum):
+    pending = "pending"
+    scheduled = "scheduled"
+    success = "success"
+    failed = "failed"
+    dry_run = "dry_run"
+
 # Models
 class User(Base):
     __tablename__ = "users"
@@ -215,8 +222,29 @@ class GeneratedContent(Base):
     suggested_media_id = Column(Integer, nullable=True)
     language = Column(String, default="en", nullable=False)
     status = Column(Enum(GeneratedStatus), default=GeneratedStatus.draft)
+    publish_status = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     published_at = Column(DateTime, nullable=True)
     
     # Relationships
     expedition = relationship("Expedition", back_populates="generated_content")
+    publish_logs = relationship("PublishLog", back_populates="generated_content", cascade="all, delete-orphan")
+
+class PublishLog(Base):
+    __tablename__ = "publish_log"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    generated_content_id = Column(Integer, ForeignKey("generated_content.id"), nullable=False)
+    platform = Column(String, nullable=False)
+    status = Column(Enum(PublishLogStatus), default=PublishLogStatus.pending)
+    external_post_id = Column(String, nullable=True)
+    external_url = Column(String, nullable=True)
+    error_message = Column(Text, nullable=True)
+    media_id = Column(Integer, ForeignKey("media_items.id"), nullable=True)
+    scheduled_at = Column(DateTime, nullable=True)
+    published_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    generated_content = relationship("GeneratedContent", back_populates="publish_logs")
+    media = relationship("MediaItem")

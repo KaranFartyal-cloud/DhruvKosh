@@ -41,6 +41,7 @@ export const API_CONFIG = {
     generateContent:   (expeditionId) => `/api/generated/generate/${expeditionId}`,
     generateItemContent: (type, id) => `/api/generated/generate/item/${type}/${id}`,
     generatedByExpedition: (expeditionId) => `/api/generated/expedition/${expeditionId}/content`,
+    generatedByItem: (type, id) => `/api/generated/item/${type}/${id}/content`,
     generatedItemById: (id) => `/api/generated/generated-content/${id}`,
     updateGenerated:   (id) => `/api/generated/generated-content/${id}`,
     updateGeneratedStatus: (id) => `/api/generated/generated-content/${id}/status`,

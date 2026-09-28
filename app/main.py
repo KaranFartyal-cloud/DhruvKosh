@@ -9,6 +9,8 @@ load_dotenv()
 
 from fastapi.responses import JSONResponse
 import traceback
+from app.services.publish_service import start_scheduler
+from app.services.publishers.registry import get_available_platforms
 
 app = FastAPI(title="NCPOR Polar Science Outreach Portal")
 
@@ -39,14 +41,22 @@ app.include_router(activities.router, prefix="/api/activities", tags=["activitie
 app.include_router(files.router, prefix="/api/files", tags=["files"])
 app.include_router(generated_content.router, prefix="/api/generated", tags=["generated_content"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+from app.routes import publish
+app.include_router(publish.router, prefix="/api/publish", tags=["publish"])
 
 @app.on_event("startup")
 async def startup_event():
     init_db()
+    start_scheduler()
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "healthy", "service": "NCPOR Portal API"}
+    return {
+        "status": "healthy", 
+        "service": "NCPOR Portal API",
+        "configured_platforms": get_available_platforms(),
+        "publish_mode": os.getenv("PUBLISH_MODE", "dry_run")
+    }
 
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

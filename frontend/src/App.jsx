@@ -6,6 +6,7 @@ import Repository from './pages/Repository';
 import Upload from './pages/Upload';
 import Dashboard from './pages/Dashboard';
 import ContentDetail from './pages/ContentDetail';
+import Publishing from './pages/Publishing';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -26,6 +27,7 @@ function App() {
             <Route index element={<Repository />} />
             <Route path="upload" element={<Upload />} />
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="publishing" element={<Publishing />} />
             <Route path="content/:id" element={<ContentDetail />} />
           </Route>
         </Routes>

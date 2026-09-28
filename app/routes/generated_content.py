@@ -248,6 +248,16 @@ def get_generated_content(expedition_id: int, db: Session = Depends(get_db)):
     
     return grouped
 
+@router.get("/item/{item_type}/{item_id}/content")
+def get_item_generated_content(item_type: str, item_id: int, db: Session = Depends(get_db)):
+    """Get all generated content for a specific item."""
+    content = db.query(GeneratedContent).filter(
+        GeneratedContent.source_type == item_type,
+        GeneratedContent.source_id == item_id
+    ).order_by(GeneratedContent.created_at.desc()).all()
+    
+    return content
+
 @router.get("/generated-content/{content_id}", response_model=GeneratedContentResponse)
 def get_generated_content_item(content_id: int, db: Session = Depends(get_db)):
     content = db.query(GeneratedContent).filter(GeneratedContent.id == content_id).first()

@@ -7,6 +7,7 @@ const Navbar = () => {
     { path: '/', label: 'Repository' },
     { path: '/upload', label: 'Upload' },
     { path: '/dashboard', label: 'Dashboard' },
+    { path: '/publishing', label: 'Publishing' },
   ];
   
   return (

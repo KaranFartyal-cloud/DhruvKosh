@@ -75,6 +75,13 @@ class Role(str, Enum):
     viewer = "viewer"
     public = "public"
 
+class PublishLogStatus(str, Enum):
+    pending = "pending"
+    scheduled = "scheduled"
+    success = "success"
+    failed = "failed"
+    dry_run = "dry_run"
+
 # Preview schema (define before it's used)
 class DatasetPreview(BaseModel):
     columns: List[str]
@@ -306,6 +313,7 @@ class GeneratedContentBase(BaseModel):
     suggested_media_id: Optional[int] = None
     language: str = "en"
     status: GeneratedStatus = GeneratedStatus.draft
+    publish_status: Optional[str] = None
 
 class GeneratedContentCreate(GeneratedContentBase):
     expedition_id: Optional[int] = None
@@ -314,12 +322,32 @@ class GeneratedContentUpdate(BaseModel):
     generated_text: Optional[str] = None
     generated_title: Optional[str] = None
     status: Optional[GeneratedStatus] = None
+    publish_status: Optional[str] = None
 
 class GeneratedContentResponse(GeneratedContentBase):
     id: int
     expedition_id: Optional[int] = None
     created_at: datetime
     published_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+# Publish Log Schemas
+class PublishLogBase(BaseModel):
+    platform: str
+    status: PublishLogStatus = PublishLogStatus.pending
+    external_post_id: Optional[str] = None
+    external_url: Optional[str] = None
+    error_message: Optional[str] = None
+    media_id: Optional[int] = None
+    scheduled_at: Optional[datetime] = None
+    published_at: Optional[datetime] = None
+
+class PublishLogResponse(PublishLogBase):
+    id: int
+    generated_content_id: int
+    created_at: datetime
     
     class Config:
         from_attributes = True

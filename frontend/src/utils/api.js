@@ -313,33 +313,27 @@ export const contentAPI = {
     if (!compositeId) return { data: null };
     const [type, rawId] = String(compositeId).split('-');
     const id = parseInt(rawId);
+    let resultData = null;
     try {
       if (type === 'report') {
-        // We don't have a direct single-report endpoint that exposes expedition context,
-        // but we can search expeditions to find it
         const res = await api.get(API_CONFIG.endpoints.expeditions, { params: { page_size: 100 } });
         const expItems = res.data?.items || [];
         for (const exp of expItems) {
           const full = await api.get(API_CONFIG.endpoints.expeditionFull(exp.id));
           const report = (full.data?.reports || []).find(r => r.id === id);
-          if (report) return { data: normaliseReport(report, exp) };
+          if (report) { resultData = normaliseReport(report, exp); break; }
         }
-        return { data: null };
       }
-      if (type === 'dataset') {
+      else if (type === 'dataset') {
         const res = await api.get(API_CONFIG.endpoints.datasetById(id));
-        return { data: normaliseDataset(res.data) };
+        resultData = normaliseDataset(res.data);
       }
-      if (type === 'publication') {
+      else if (type === 'publication') {
         const res = await api.get(API_CONFIG.endpoints.publicationById(id));
-        return { data: normalisePublication(res.data) };
+        resultData = normalisePublication(res.data);
       }
-      if (type === 'media') {
-        // Fetch media item directly via /api/expeditions/{id}
+      else if (type === 'media') {
         const res = await api.get(`/api/expeditions/${id}`);
-        // To properly normalise, we ideally need the expedition context. 
-        // For now, pass a dummy standalone expedition object if we can't fetch it easily.
-        // Actually, we can fetch the expedition using media's expedition_id if needed.
         let exp = { expedition_code: 'Standalone', region: 'general' };
         if (res.data.expedition_id) {
             try {
@@ -347,7 +341,25 @@ export const contentAPI = {
                 exp = expRes.data || exp;
             } catch(e) {}
         }
-        return { data: normaliseMedia(res.data, exp) };
+        resultData = normaliseMedia(res.data, exp);
+      }
+      
+      if (resultData) {
+        try {
+          const genRes = await api.get(API_CONFIG.endpoints.generatedByItem(type, id));
+          const posts = (genRes.data || []).map(dbPost => ({
+            id: dbPost.id,
+            platform: dbPost.platform || (dbPost.content_category === 'website_article' ? 'website' : 'educational'),
+            generated_text: dbPost.generated_text,
+            status: dbPost.status,
+            title: dbPost.generated_title,
+            suggested_media_id: dbPost.suggested_media_id
+          }));
+          resultData.generated_posts = posts;
+        } catch(e) {
+          resultData.generated_posts = [];
+        }
+        return { data: resultData };
       }
       return { data: null };
     } catch (e) {
@@ -489,97 +501,24 @@ export const contentAPI = {
     const [type, rawId] = String(compositeId).split('-');
     const id = parseInt(rawId);
 
-    // Backend now supports generating for a specific item
-    // Make sure we have the new endpoint in API_CONFIG
-    let res;
-    if (API_CONFIG.endpoints.generateItemContent) {
-      try {
-        res = await api.post(API_CONFIG.endpoints.generateItemContent(type, id));
-      } catch (err) {
-        // Fallback logic if backend isn't updated yet or if it fails
-        console.warn("generateItemContent failed, falling back to expedition generation", err);
-      }
-    }
+    // Backend generates and saves to DB
+    await api.post(API_CONFIG.endpoints.generateItemContent(type, id));
     
-    // Fallback: Find which expedition this item belongs to
-    if (!res) {
-      let expeditionId = null;
-      try {
-        const fallbackRes = await api.get(API_CONFIG.endpoints.expeditions, { params: { page_size: 100 } });
-        const expItems = fallbackRes.data?.items || [];
-        for (const exp of expItems) {
-          const full = await api.get(API_CONFIG.endpoints.expeditionFull(exp.id));
-          const found =
-            (full.data?.reports || []).find(r => r.id === id) ||
-            (full.data?.media_items || []).find(m => m.id === id);
-          if (found) { expeditionId = exp.id; break; }
-        }
-      } catch { /* continue */ }
-
-      if (!expeditionId) {
-        expeditionId = await ensureDefaultExpedition();
-      }
-      if (!expeditionId) throw new Error('Could not determine expedition for generation');
-
-      res = await api.post(API_CONFIG.endpoints.generateContent(expeditionId));
+    // Fetch the newly saved real posts from the DB
+    try {
+      const genRes = await api.get(API_CONFIG.endpoints.generatedByItem(type, id));
+      const posts = (genRes.data || []).map(dbPost => ({
+        id: dbPost.id,
+        platform: dbPost.platform || (dbPost.content_category === 'website_article' ? 'website' : 'educational'),
+        generated_text: dbPost.generated_text,
+        status: dbPost.status,
+        title: dbPost.generated_title,
+        suggested_media_id: dbPost.suggested_media_id
+      }));
+      return { data: posts };
+    } catch (e) {
+      return { data: [] };
     }
-
-    // Backend returns { social_posts, website_article, educational_explainer, quiz }
-    const generated = res.data;
-    const posts = [];
-    let pid = 1;
-
-    // Handle both old flat format and new bilingual format
-    const processLangContent = (langContent, langLabel = '') => {
-      if (!langContent) return;
-      
-      const suffix = langLabel ? ` (${langLabel})` : '';
-      
-      if (langContent.social_posts) {
-        Object.entries(langContent.social_posts).forEach(([platform, data]) => {
-          const text = typeof data === 'string' ? data : (data.text || '');
-          if (text && !text.startsWith('Error')) {
-            posts.push({ 
-              id: pid++, 
-              platform: platform + (langLabel ? `-${langLabel}` : ''), 
-              generated_text: text, 
-              status: 'draft',
-              suggested_media_id: data.suggested_media_id || null
-            });
-          }
-        });
-      }
-      if (langContent.website_article?.body) {
-        posts.push({ 
-          id: pid++, 
-          platform: 'website' + (langLabel ? `-${langLabel}` : ''), 
-          generated_text: langContent.website_article.body, 
-          status: 'draft', 
-          title: langContent.website_article.headline,
-          suggested_media_id: langContent.website_article.suggested_media_id || null
-        });
-      }
-      if (langContent.educational_explainer?.explainer_text) {
-        posts.push({ 
-          id: pid++, 
-          platform: 'educational' + (langLabel ? `-${langLabel}` : ''), 
-          generated_text: langContent.educational_explainer.explainer_text, 
-          status: 'draft', 
-          title: langContent.educational_explainer.title,
-          suggested_media_id: langContent.educational_explainer.suggested_media_id || null
-        });
-      }
-    };
-
-    if (generated.en) {
-      // Process only English for now, no suffix needed in UI
-      processLangContent(generated.en, '');
-    } else {
-      // Fallback for old format
-      processLangContent(generated);
-    }
-
-    return { data: posts, _raw: generated };
   },
 
   updatePost: async (id, data) => {
