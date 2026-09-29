@@ -5,6 +5,8 @@ const Publishing = () => {
   const [logs, setLogs] = useState([]);
   const [platforms, setPlatforms] = useState({});
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -37,6 +39,12 @@ const Publishing = () => {
     }
   };
 
+  const handleCopy = (url, id) => {
+    navigator.clipboard.writeText(url);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'success': return 'bg-green-100 text-green-800 border-green-300';
@@ -48,7 +56,7 @@ const Publishing = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-display text-ncpor-primary">Publishing Dashboard</h1>
         {platforms.publish_mode && (
@@ -85,7 +93,7 @@ const Publishing = () => {
               <th className="px-6 py-4 font-semibold text-gray-600">Platform</th>
               <th className="px-6 py-4 font-semibold text-gray-600">Content ID</th>
               <th className="px-6 py-4 font-semibold text-gray-600">Status</th>
-              <th className="px-6 py-4 font-semibold text-gray-600">Link/Error</th>
+              <th className="px-6 py-4 font-semibold text-gray-600">Post link</th>
               <th className="px-6 py-4 font-semibold text-gray-600">Actions</th>
             </tr>
           </thead>
@@ -96,36 +104,78 @@ const Publishing = () => {
               <tr><td colSpan="6" className="px-6 py-8 text-center text-gray-500">No publishing history found.</td></tr>
             ) : (
               logs.map(log => (
-                <tr key={log.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {new Date(log.scheduled_at || log.created_at).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="font-semibold text-ncpor-primary capitalize">{log.platform}</span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline cursor-pointer" onClick={() => window.location.href=`/content/${log.generated_content_id}`}>
-                    #{log.generated_content_id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(log.status)}`}>
-                      {log.status.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm max-w-xs truncate">
-                    {log.external_url ? (
-                      <a href={log.external_url} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">View Post ↗</a>
-                    ) : log.error_message ? (
-                      <span className="text-red-500" title={log.error_message}>{log.error_message}</span>
-                    ) : '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {log.status === 'scheduled' && (
-                      <button onClick={() => handleCancel(log.id)} className="text-red-500 hover:text-red-700 font-semibold">
-                        Cancel
-                      </button>
-                    )}
-                  </td>
-                </tr>
+                <React.Fragment key={log.id}>
+                  <tr className="hover:bg-gray-50 group">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {new Date(log.scheduled_at || log.created_at).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-ncpor-primary capitalize">{log.platform}</span>
+                        {log.text_preview && (
+                          <button onClick={() => setExpandedId(expandedId === log.id ? null : log.id)} className="text-gray-400 hover:text-blue-500" title="Toggle preview">
+                            <svg className={`w-4 h-4 transform transition-transform ${expandedId === log.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline cursor-pointer" onClick={() => window.location.href=`/content/${log.generated_content_id}`}>
+                      #{log.generated_content_id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(log.status)}`}>
+                        {log.status.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm max-w-sm">
+                      {log.status === 'dry_run' ? (
+                        <span className="text-gray-400 italic">Dry run: not published</span>
+                      ) : log.status === 'failed' ? (
+                        <span className="text-red-500 font-medium">{log.error_message || 'Failed'}</span>
+                      ) : log.status === 'success' ? (
+                        log.external_url === 'PRIVATE_TELEGRAM' ? (
+                          <span className="text-gray-500 italic">No public link (private channel)</span>
+                        ) : log.external_url ? (
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <a href={log.external_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-medium inline-flex items-center gap-1">
+                                View post <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                              </a>
+                              <button onClick={() => handleCopy(log.external_url, log.id)} className="text-gray-400 hover:text-gray-600 transition-colors" title="Copy link">
+                                {copiedId === log.id ? (
+                                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                ) : (
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                                )}
+                              </button>
+                            </div>
+                            <div className="text-xs text-gray-400 truncate mt-1 max-w-[200px]" title={log.external_url}>{log.external_url}</div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 italic">Link unavailable</span>
+                        )
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {log.status === 'scheduled' && (
+                        <button onClick={() => handleCancel(log.id)} className="text-red-500 hover:text-red-700 font-semibold">
+                          Cancel
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                  {expandedId === log.id && log.text_preview && (
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      <td colSpan="6" className="px-6 py-4 text-sm text-gray-600 italic">
+                        <div className="pl-4 border-l-2 border-gray-300">
+                          {log.text_preview}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))
             )}
           </tbody>

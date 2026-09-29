@@ -34,11 +34,11 @@ const fmtSize = (bytes) => {
 
 /* ─── Processing step indicator ────────────────────────────────────────── */
 const Step = ({ state, label }) => {
-  const icon = state === 'done'    ? <Icon path={PATHS.check} cls="w-4 h-4 text-[#FF6A2A]" />
-             : state === 'active'  ? <span className="w-4 h-4 border-2 border-[#FF6A2A] border-t-transparent rounded-full animate-spin inline-block" />
-             :                       <span className="w-4 h-4 rounded-full border border-[#292929] inline-block" />;
+  const icon = state === 'done'    ? <Icon path={PATHS.check} cls="w-4 h-4 text-ncpor-accent" />
+             : state === 'active'  ? <span className="w-4 h-4 border-2 border-ncpor-accent border-t-transparent rounded-full animate-spin inline-block" />
+             :                       <span className="w-4 h-4 rounded-full border border-ncpor-divider inline-block" />;
   return (
-    <div className={`flex items-center gap-2 text-sm ${state === 'pending' ? 'text-[#666666]' : state === 'active' ? 'text-[#F5F5F5]' : 'text-[#A0A0A0]'}`}>
+    <div className={`flex items-center gap-2 text-sm ${state === 'pending' ? 'text-ncpor-muted' : state === 'active' ? 'text-ncpor-primary font-medium' : 'text-ncpor-secondary'}`}>
       {icon}
       <span>{label}</span>
     </div>
@@ -65,32 +65,31 @@ const PDFPreviewModal = ({ file, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col"
-      style={{ background: 'rgba(7,7,7,0.96)' }}
+      className="fixed inset-0 z-50 flex flex-col bg-black/90 backdrop-blur-xl"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[#292929] bg-[#0D0D0D] shrink-0">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-ncpor-divider bg-ncpor-panel shrink-0">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-[#FF6A2A]/10 border border-[#FF6A2A]/20">
-            <Icon path={PATHS.pdf} cls="w-4 h-4 text-[#FF6A2A]" />
+          <div className="p-2 rounded-lg bg-ncpor-accent/10 border border-ncpor-accent/20">
+            <Icon path={PATHS.pdf} cls="w-4 h-4 text-ncpor-accent" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-[#F5F5F5] truncate max-w-xs">{file.name}</p>
-            <p className="text-xs text-[#666666]">{fmtSize(file.size)}</p>
+            <p className="text-sm font-semibold text-ncpor-primary truncate max-w-xs">{file.name}</p>
+            <p className="text-xs text-ncpor-muted">{fmtSize(file.size)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={handleDownload}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#FF6A2A]/40 text-[#FF6A2A] text-sm font-medium hover:bg-[#FF6A2A] hover:text-[#070707] transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-ncpor-accent/40 text-ncpor-accent text-sm font-medium hover:bg-ncpor-accent hover:text-[#05080F] transition-all"
           >
             <Icon path={PATHS.download} cls="w-4 h-4" />
             <span>Download</span>
           </button>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg border border-[#292929] text-[#A0A0A0] hover:border-[#F5F5F5] hover:text-[#F5F5F5] transition-all"
+            className="p-2 rounded-lg border border-ncpor-divider text-ncpor-secondary hover:border-ncpor-primary hover:text-ncpor-primary transition-all"
           >
             <Icon path={PATHS.x} cls="w-4 h-4" />
           </button>
@@ -100,7 +99,7 @@ const PDFPreviewModal = ({ file, onClose }) => {
       <div className="flex-1 overflow-hidden p-4">
         <iframe
           src={url.current + '#toolbar=1&navpanes=1'}
-          className="w-full h-full rounded-xl border border-[#292929]"
+          className="w-full h-full rounded-xl border border-ncpor-divider bg-white"
           title="PDF Preview"
         />
       </div>
@@ -120,9 +119,9 @@ const Upload = () => {
 
   // PDF analysis state
   const [pdfFile, setPdfFile] = useState(null);
-  const [thumbnail, setThumbnail] = useState(null); // base64 data URL
+  const [thumbnail, setThumbnail] = useState(null);
   const [numPages, setNumPages] = useState(null);
-  const [analysisSteps, setAnalysisSteps] = useState(null); // null = not started
+  const [analysisSteps, setAnalysisSteps] = useState(null);
   const [overview, setOverview] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -168,24 +167,20 @@ const Upload = () => {
 
     if (!isPDFType(formData.content_type) || file.type !== 'application/pdf') return;
 
-    // Step: uploaded
     setAnalysisSteps({ uploaded: 'done', extracted: 'active', overview: 'pending', findings: 'pending' });
 
     try {
-      // Render first page thumbnail
       const renderResult = await renderFirstPageToCanvas(file);
       if (renderResult) {
         setThumbnail(renderResult.dataURL);
         setNumPages(renderResult.numPages);
       }
 
-      // Extract text
       const { text, numPages: pages } = await extractPDFText(file);
       setNumPages(pages);
       setAnalysisSteps(s => ({ ...s, extracted: 'done', overview: 'active' }));
 
-      // Analyze
-      await new Promise(r => setTimeout(r, 400)); // brief deliberate pause for UX
+      await new Promise(r => setTimeout(r, 400));
       const result = analyzePDFContent(text, file.name, pages);
       setAnalysisSteps(s => ({ ...s, overview: 'done', findings: 'active' }));
 
@@ -193,7 +188,6 @@ const Upload = () => {
       setAnalysisSteps(s => ({ ...s, findings: 'done' }));
       setOverview(result);
 
-      // Pre-fill form fields only if user hasn't typed anything
       if (result) {
         setFormData(prev => ({
           ...prev,
@@ -224,7 +218,7 @@ const Upload = () => {
     if (file) processFile(file);
   };
 
-  /* ── Form submit (preserves original logic) ── */
+  /* ── Form submit ── */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -268,22 +262,22 @@ const Upload = () => {
         <PDFPreviewModal file={pdfFile} onClose={() => setShowPreviewModal(false)} />
       )}
 
-      <div className="max-w-7xl mx-auto w-full">
+      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-display text-[#F5F5F5] mb-1 tracking-tight">Upload Content</h1>
-          <p className="text-[#666666] text-base">Add reports, datasets, publications, or media to the NCPOR repository.</p>
+          <h1 className="text-3xl font-display text-ncpor-primary mb-1 tracking-tight">Upload Content</h1>
+          <p className="text-ncpor-secondary text-base">Add reports, datasets, publications, or media to the NCPOR repository.</p>
         </div>
 
         {/* Alerts */}
         {success && (
-          <div className="flex items-center gap-3 bg-[#181818] border border-[#292929] text-[#F5F5F5] px-5 py-3.5 rounded-xl mb-6">
-            <div className="p-1 rounded-full bg-[#FF6A2A]/10"><Icon path={PATHS.check} cls="w-4 h-4 text-[#FF6A2A]" /></div>
+          <div className="flex items-center gap-3 bg-ncpor-panel border border-ncpor-divider text-ncpor-primary px-5 py-3.5 rounded-xl mb-6">
+            <div className="p-1 rounded-full bg-ncpor-accent/10"><Icon path={PATHS.check} cls="w-4 h-4 text-ncpor-accent" /></div>
             <span className="font-medium text-sm">Content uploaded successfully — redirecting…</span>
           </div>
         )}
         {error && (
-          <div className="flex items-center gap-3 bg-red-900/10 border border-red-500/20 text-red-400 px-5 py-3.5 rounded-xl mb-6">
+          <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 text-red-300 px-5 py-3.5 rounded-xl mb-6">
             <Icon path="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-5 h-5 shrink-0" />
             <span className="text-sm font-medium">{error}</span>
           </div>
@@ -295,7 +289,7 @@ const Upload = () => {
             {!pdfFile ? (
               /* ── Drop Zone ── */
               <div className="space-y-3">
-                <label className="block text-xs font-semibold uppercase tracking-widest text-[#666666]">File *</label>
+                <label className="block text-xs font-semibold uppercase tracking-widest text-ncpor-secondary">File *</label>
                 <div
                   onDragOver={onDragOver}
                   onDragLeave={onDragLeave}
@@ -303,21 +297,21 @@ const Upload = () => {
                   onClick={() => fileInputRef.current?.click()}
                   className={`relative cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-200 flex flex-col items-center justify-center py-16 px-6 ${
                     dragging
-                      ? 'border-[#FF6A2A] bg-[#FF6A2A]/5'
-                      : 'border-[#292929] bg-[#0D0D0D] hover:border-[#FF6A2A]/40 hover:bg-[#FF6A2A]/3'
+                      ? 'border-ncpor-accent bg-ncpor-accent/5'
+                      : 'border-ncpor-divider bg-ncpor-panel hover:border-ncpor-accent/40 hover:bg-ncpor-accent/5'
                   }`}
                 >
-                  <div className={`mb-5 p-4 rounded-2xl border transition-all ${dragging ? 'border-[#FF6A2A]/40 bg-[#FF6A2A]/10' : 'border-[#292929] bg-[#181818]'}`}>
-                    <Icon path={PATHS.pdf} cls={`w-8 h-8 transition-colors ${dragging ? 'text-[#FF6A2A]' : 'text-[#666666]'}`} />
+                  <div className={`mb-5 p-4 rounded-2xl border transition-all ${dragging ? 'border-ncpor-accent/40 bg-ncpor-accent/10' : 'border-ncpor-divider bg-ncpor-elevated'}`}>
+                    <Icon path={PATHS.pdf} cls={`w-8 h-8 transition-colors ${dragging ? 'text-ncpor-accent' : 'text-ncpor-muted'}`} />
                   </div>
-                  <p className="text-[#F5F5F5] font-semibold text-base mb-1">
+                  <p className="text-ncpor-primary font-semibold text-base mb-1">
                     {dragging ? 'Drop your file here' : 'Drag & drop your file here'}
                   </p>
-                  <p className="text-[#666666] text-sm mb-5">or click to browse</p>
-                  <div className="px-5 py-2.5 rounded-lg border border-[#292929] bg-[#181818] text-[#A0A0A0] text-sm font-medium hover:border-[#FF6A2A] hover:text-[#FF6A2A] transition-all">
+                  <p className="text-ncpor-muted text-sm mb-5">or click to browse</p>
+                  <div className="px-5 py-2.5 rounded-lg border border-ncpor-divider bg-ncpor-elevated text-ncpor-secondary text-sm font-medium hover:border-ncpor-accent hover:text-ncpor-accent transition-all">
                     Choose File
                   </div>
-                  <p className="text-[#666666] text-xs mt-5">Accepted: <span className="text-[#A0A0A0] font-mono">{getFileTypeAccept(formData.content_type)}</span></p>
+                  <p className="text-ncpor-muted text-xs mt-5">Accepted: <span className="text-ncpor-secondary font-mono">{getFileTypeAccept(formData.content_type)}</span></p>
                 </div>
                 <input
                   ref={fileInputRef}
@@ -335,26 +329,25 @@ const Upload = () => {
 
                 {/* LEFT: PDF card (2/5) */}
                 <div className="lg:col-span-2 flex flex-col gap-4">
-                  {/* PDF document card */}
-                  <div className="rounded-2xl border border-[#292929] bg-[#0D0D0D] overflow-hidden">
+                  <div className="rounded-2xl border border-ncpor-divider bg-ncpor-panel overflow-hidden">
                     {/* Header strip */}
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-[#292929]">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-ncpor-divider">
                       <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-[#FF6A2A]/10 border border-[#FF6A2A]/20">
-                          <Icon path={PATHS.pdf} cls="w-3.5 h-3.5 text-[#FF6A2A]" />
+                        <div className="p-1.5 rounded-lg bg-ncpor-accent/10 border border-ncpor-accent/20">
+                          <Icon path={PATHS.pdf} cls="w-3.5 h-3.5 text-ncpor-accent" />
                         </div>
-                        <span className="text-xs font-semibold uppercase tracking-widest text-[#FF6A2A]">PDF Document</span>
+                        <span className="text-xs font-semibold uppercase tracking-widest text-ncpor-accent">PDF Document</span>
                       </div>
                       {allStepsDone && (
-                        <div className="flex items-center gap-1.5 text-xs text-[#A0A0A0]">
-                          <Icon path={PATHS.check} cls="w-3.5 h-3.5 text-[#FF6A2A]" />
+                        <div className="flex items-center gap-1.5 text-xs text-ncpor-secondary">
+                          <Icon path={PATHS.check} cls="w-3.5 h-3.5 text-ncpor-accent" />
                           <span>Ready</span>
                         </div>
                       )}
                     </div>
 
                     {/* Thumbnail area */}
-                    <div className="relative bg-[#0A0A0A] aspect-[3/4] flex items-center justify-center overflow-hidden">
+                    <div className="relative bg-ncpor-elevated aspect-[3/4] flex items-center justify-center overflow-hidden">
                       {thumbnail ? (
                         <img
                           src={thumbnail}
@@ -362,20 +355,20 @@ const Upload = () => {
                           className="w-full h-full object-contain"
                         />
                       ) : (
-                        <div className="flex flex-col items-center gap-3 text-[#666666]">
-                          <Icon path={PATHS.doc} cls="w-12 h-12 text-[#292929]" />
+                        <div className="flex flex-col items-center gap-3 text-ncpor-muted">
+                          <Icon path={PATHS.doc} cls="w-12 h-12 text-ncpor-divider" />
                           <span className="text-xs">Rendering preview…</span>
                         </div>
                       )}
                     </div>
 
                     {/* Metadata strip */}
-                    <div className="px-4 py-3 border-t border-[#292929] space-y-1.5">
-                      <p className="text-[#F5F5F5] text-sm font-semibold truncate leading-snug">{pdfFile.name}</p>
+                    <div className="px-4 py-3 border-t border-ncpor-divider space-y-1.5">
+                      <p className="text-ncpor-primary text-sm font-semibold truncate leading-snug">{pdfFile.name}</p>
                       <div className="flex items-center gap-3 flex-wrap">
-                        <span className="text-xs text-[#A0A0A0] bg-[#181818] border border-[#292929] px-2 py-0.5 rounded">PDF</span>
-                        <span className="text-xs text-[#A0A0A0]">{fmtSize(pdfFile.size)}</span>
-                        {numPages && <span className="text-xs text-[#A0A0A0]">{numPages} pages</span>}
+                        <span className="text-xs text-ncpor-secondary bg-ncpor-elevated border border-ncpor-divider px-2 py-0.5 rounded">PDF</span>
+                        <span className="text-xs text-ncpor-secondary">{fmtSize(pdfFile.size)}</span>
+                        {numPages && <span className="text-xs text-ncpor-secondary">{numPages} pages</span>}
                       </div>
                     </div>
 
@@ -385,7 +378,7 @@ const Upload = () => {
                         <button
                           type="button"
                           onClick={() => setShowPreviewModal(true)}
-                          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#FF6A2A] text-[#070707] text-sm font-semibold hover:bg-[#FF7A3D] transition-all"
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-ncpor-accent text-[#05080F] text-sm font-semibold hover:opacity-90 transition-all"
                         >
                           <Icon path={PATHS.eye} cls="w-4 h-4" />
                           Open Preview
@@ -394,7 +387,7 @@ const Upload = () => {
                       <button
                         type="button"
                         onClick={handleDownloadPDF}
-                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border border-[#FF6A2A]/40 text-[#FF6A2A] text-sm font-semibold hover:bg-[#FF6A2A] hover:text-[#070707] transition-all"
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border border-ncpor-accent/40 text-ncpor-accent text-sm font-semibold hover:bg-ncpor-accent hover:text-[#05080F] transition-all"
                       >
                         <Icon path={PATHS.download} cls="w-4 h-4" />
                         Download
@@ -410,7 +403,7 @@ const Upload = () => {
                       setAnalysisSteps(null); setNumPages(null);
                       setFormData(prev => ({ ...prev, file: null }));
                     }}
-                    className="text-xs text-[#666666] hover:text-[#A0A0A0] underline text-center transition-colors"
+                    className="text-xs text-ncpor-muted hover:text-ncpor-secondary underline text-center transition-colors"
                   >
                     Replace file
                   </button>
@@ -418,11 +411,9 @@ const Upload = () => {
 
                 {/* RIGHT: Overview panel (3/5) */}
                 <div className="lg:col-span-3 flex flex-col gap-4">
-
-                  {/* Processing steps */}
                   {analysisSteps && !allStepsDone && (
-                    <div className="rounded-xl border border-[#292929] bg-[#0D0D0D] px-5 py-4">
-                      <p className="text-xs font-semibold uppercase tracking-widest text-[#666666] mb-3">Analyzing Document…</p>
+                    <div className="rounded-xl border border-ncpor-divider bg-ncpor-panel px-5 py-4">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-ncpor-muted mb-3">Analyzing Document…</p>
                       <div className="space-y-2">
                         <Step state={analysisSteps.uploaded}  label="PDF uploaded" />
                         <Step state={analysisSteps.extracted} label="Text extracted" />
@@ -433,55 +424,55 @@ const Upload = () => {
                   )}
 
                   {allStepsDone && (
-                    <div className="flex items-center gap-2 px-4 py-3 rounded-xl border border-[#292929] bg-[#0D0D0D]">
-                      <Icon path={PATHS.check} cls="w-4 h-4 text-[#FF6A2A]" />
-                      <span className="text-sm text-[#A0A0A0] font-medium">Document analyzed</span>
+                    <div className="flex items-center gap-2 px-4 py-3 rounded-xl border border-ncpor-divider bg-ncpor-panel">
+                      <Icon path={PATHS.check} cls="w-4 h-4 text-ncpor-accent" />
+                      <span className="text-sm text-ncpor-secondary font-medium">Document analyzed</span>
                     </div>
                   )}
 
                   {overview && (
-                    <div className="rounded-2xl border border-[#292929] bg-[#0D0D0D] overflow-hidden">
+                    <div className="rounded-2xl border border-ncpor-divider bg-ncpor-panel overflow-hidden">
                       {/* Overview header */}
-                      <div className="px-5 py-4 border-b border-[#292929]">
-                        <p className="text-xs font-semibold uppercase tracking-widest text-[#FF6A2A] mb-0.5">Document Overview</p>
-                        <p className="text-[#F5F5F5] font-semibold text-base leading-snug">{overview.title}</p>
+                      <div className="px-5 py-4 border-b border-ncpor-divider">
+                        <p className="text-xs font-semibold uppercase tracking-widest text-ncpor-accent mb-0.5">Document Overview</p>
+                        <p className="text-ncpor-primary font-semibold text-base leading-snug">{overview.title}</p>
                       </div>
 
                       <div className="px-5 py-4 space-y-5">
                         {/* Metadata pills */}
                         <div className="flex flex-wrap gap-2">
-                          <span className="flex items-center gap-1.5 text-xs text-[#A0A0A0] bg-[#181818] border border-[#292929] px-3 py-1 rounded-full">
+                          <span className="flex items-center gap-1.5 text-xs text-ncpor-secondary bg-ncpor-elevated border border-ncpor-divider px-3 py-1 rounded-full">
                             <Icon path={PATHS.file} cls="w-3 h-3" />{overview.docType}
                           </span>
                           {numPages && (
-                            <span className="flex items-center gap-1.5 text-xs text-[#A0A0A0] bg-[#181818] border border-[#292929] px-3 py-1 rounded-full">
+                            <span className="flex items-center gap-1.5 text-xs text-ncpor-secondary bg-ncpor-elevated border border-ncpor-divider px-3 py-1 rounded-full">
                               <Icon path={PATHS.doc} cls="w-3 h-3" />{numPages} pages
                             </span>
                           )}
                           {overview.year !== 'Not available in document' && (
-                            <span className="flex items-center gap-1.5 text-xs text-[#A0A0A0] bg-[#181818] border border-[#292929] px-3 py-1 rounded-full">
+                            <span className="flex items-center gap-1.5 text-xs text-ncpor-secondary bg-ncpor-elevated border border-ncpor-divider px-3 py-1 rounded-full">
                               <Icon path={PATHS.calendar} cls="w-3 h-3" />{overview.year}
                             </span>
                           )}
-                          <span className="flex items-center gap-1.5 text-xs text-[#FF6A2A] bg-[#FF6A2A]/8 border border-[#FF6A2A]/20 px-3 py-1 rounded-full capitalize">
+                          <span className="flex items-center gap-1.5 text-xs text-ncpor-accent bg-ncpor-accent/10 border border-ncpor-accent/20 px-3 py-1 rounded-full capitalize">
                             {overview.category}
                           </span>
                         </div>
 
                         {/* Summary */}
                         <div>
-                          <p className="text-xs font-semibold uppercase tracking-widest text-[#666666] mb-2">Summary</p>
-                          <p className="text-sm text-[#A0A0A0] leading-relaxed">{overview.summary}</p>
+                          <p className="text-xs font-semibold uppercase tracking-widest text-ncpor-muted mb-2">Summary</p>
+                          <p className="text-sm text-ncpor-secondary leading-relaxed">{overview.summary}</p>
                         </div>
 
                         {/* Key Findings */}
                         {overview.findings?.length > 0 && overview.findings[0] !== 'Not available in document' && (
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-widest text-[#666666] mb-2">Key Findings</p>
+                            <p className="text-xs font-semibold uppercase tracking-widest text-ncpor-muted mb-2">Key Findings</p>
                             <ul className="space-y-1.5">
                               {overview.findings.map((f, i) => (
-                                <li key={i} className="flex items-start gap-2 text-sm text-[#A0A0A0]">
-                                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#FF6A2A] shrink-0" />
+                                <li key={i} className="flex items-start gap-2 text-sm text-ncpor-secondary">
+                                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-ncpor-accent shrink-0" />
                                   <span className="leading-relaxed">{f}</span>
                                 </li>
                               ))}
@@ -492,10 +483,10 @@ const Upload = () => {
                         {/* Topics */}
                         {overview.topics?.length > 0 && (
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-widest text-[#666666] mb-2">Key Topics</p>
+                            <p className="text-xs font-semibold uppercase tracking-widest text-ncpor-muted mb-2">Key Topics</p>
                             <div className="flex flex-wrap gap-2">
                               {overview.topics.map((t, i) => (
-                                <span key={i} className="text-xs text-[#A0A0A0] bg-[#181818] border border-[#292929] px-2.5 py-1 rounded-lg hover:border-[#FF6A2A]/30 transition-colors">
+                                <span key={i} className="text-xs text-ncpor-secondary bg-ncpor-elevated border border-ncpor-divider px-2.5 py-1 rounded-lg hover:border-ncpor-accent/40 transition-colors">
                                   {t}
                                 </span>
                               ))}
@@ -506,24 +497,24 @@ const Upload = () => {
                         {/* Expedition / Location */}
                         {(overview.location !== 'Not available in document' || overview.expedition !== 'Not available in document') && (
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-widest text-[#666666] mb-2">Expedition / Location</p>
-                            <div className="rounded-xl border border-[#292929] bg-[#181818] p-4 space-y-2">
+                            <p className="text-xs font-semibold uppercase tracking-widest text-ncpor-muted mb-2">Expedition / Location</p>
+                            <div className="rounded-xl border border-ncpor-divider bg-ncpor-elevated p-4 space-y-2">
                               {overview.location !== 'Not available in document' && (
                                 <div className="flex items-start gap-3 text-sm">
-                                  <Icon path={PATHS.location} cls="w-4 h-4 text-[#FF6A2A] shrink-0 mt-0.5" />
-                                  <div><span className="text-[#666666]">Location </span><span className="text-[#F5F5F5]">{overview.location}</span></div>
+                                  <Icon path={PATHS.location} cls="w-4 h-4 text-ncpor-accent shrink-0 mt-0.5" />
+                                  <div><span className="text-ncpor-muted">Location </span><span className="text-ncpor-primary">{overview.location}</span></div>
                                 </div>
                               )}
                               {overview.expedition !== 'Not available in document' && (
                                 <div className="flex items-start gap-3 text-sm">
-                                  <Icon path={PATHS.list} cls="w-4 h-4 text-[#FF6A2A] shrink-0 mt-0.5" />
-                                  <div><span className="text-[#666666]">Expedition </span><span className="text-[#F5F5F5]">{overview.expedition}</span></div>
+                                  <Icon path={PATHS.list} cls="w-4 h-4 text-ncpor-accent shrink-0 mt-0.5" />
+                                  <div><span className="text-ncpor-muted">Expedition </span><span className="text-ncpor-primary">{overview.expedition}</span></div>
                                 </div>
                               )}
                               {overview.researchArea && overview.researchArea !== 'Not available in document' && (
                                 <div className="flex items-start gap-3 text-sm">
-                                  <Icon path={PATHS.tag} cls="w-4 h-4 text-[#FF6A2A] shrink-0 mt-0.5" />
-                                  <div><span className="text-[#666666]">Research Area </span><span className="text-[#F5F5F5]">{overview.researchArea}</span></div>
+                                  <Icon path={PATHS.tag} cls="w-4 h-4 text-ncpor-accent shrink-0 mt-0.5" />
+                                  <div><span className="text-ncpor-muted">Research Area </span><span className="text-ncpor-primary">{overview.researchArea}</span></div>
                                 </div>
                               )}
                             </div>
@@ -538,23 +529,23 @@ const Upload = () => {
           </div>
 
           {/* ── Metadata Form ── */}
-          <div className="rounded-2xl border border-[#292929] bg-[#0D0D0D] p-6 space-y-6">
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#666666]">Document Metadata</p>
+          <div className="rounded-2xl border border-ncpor-divider bg-ncpor-panel p-6 space-y-6">
+            <p className="text-xs font-semibold uppercase tracking-widest text-ncpor-muted">Document Metadata</p>
 
             {/* Content Type */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest text-[#666666] mb-2">Content Type *</label>
+              <label className="block text-xs font-semibold uppercase tracking-widest text-ncpor-secondary mb-2">Content Type *</label>
               <div className="relative">
                 <select
                   name="content_type"
                   value={formData.content_type}
                   onChange={handleChange}
                   required
-                  className="w-full bg-[#0A0A0A] text-[#F5F5F5] px-4 py-2.5 border border-[#292929] rounded-xl focus:outline-none focus:border-[#FF6A2A]/50 transition-all appearance-none text-sm"
+                  className="w-full bg-ncpor-elevated text-ncpor-primary px-4 py-2.5 border border-ncpor-divider rounded-xl focus:outline-none focus:border-ncpor-accent/50 transition-all appearance-none text-sm"
                 >
                   {contentTypes.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
                 </select>
-                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-[#666666]">
+                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-ncpor-muted">
                   <Icon path={PATHS.chevron} cls="w-4 h-4" />
                 </div>
               </div>
@@ -562,20 +553,20 @@ const Upload = () => {
 
             {/* Title */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest text-[#666666] mb-2">Title *</label>
+              <label className="block text-xs font-semibold uppercase tracking-widest text-ncpor-secondary mb-2">Title *</label>
               <input
                 type="text" name="title" value={formData.title} onChange={handleChange} required
-                className="w-full bg-[#0A0A0A] text-[#F5F5F5] px-4 py-2.5 border border-[#292929] rounded-xl focus:outline-none focus:border-[#FF6A2A]/50 transition-all placeholder:text-[#666666]/50 text-sm"
+                className="w-full bg-ncpor-elevated text-ncpor-primary px-4 py-2.5 border border-ncpor-divider rounded-xl focus:outline-none focus:border-ncpor-accent/50 transition-all placeholder:text-ncpor-muted/50 text-sm"
                 placeholder="Enter content title"
               />
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest text-[#666666] mb-2">Description</label>
+              <label className="block text-xs font-semibold uppercase tracking-widest text-ncpor-secondary mb-2">Description</label>
               <textarea
                 name="description" value={formData.description} onChange={handleChange} rows={4}
-                className="w-full bg-[#0A0A0A] text-[#F5F5F5] px-4 py-2.5 border border-[#292929] rounded-xl focus:outline-none focus:border-[#FF6A2A]/50 transition-all placeholder:text-[#666666]/50 resize-none text-sm"
+                className="w-full bg-ncpor-elevated text-ncpor-primary px-4 py-2.5 border border-ncpor-divider rounded-xl focus:outline-none focus:border-ncpor-accent/50 transition-all placeholder:text-ncpor-muted/50 resize-none text-sm"
                 placeholder="Enter content description"
               />
             </div>
@@ -583,25 +574,25 @@ const Upload = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {/* Category */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-widest text-[#666666] mb-2">Category *</label>
+                <label className="block text-xs font-semibold uppercase tracking-widest text-ncpor-secondary mb-2">Category *</label>
                 <div className="relative">
                   <select
                     name="category" value={formData.category} onChange={handleChange} required
-                    className="w-full bg-[#0A0A0A] text-[#F5F5F5] px-4 py-2.5 border border-[#292929] rounded-xl focus:outline-none focus:border-[#FF6A2A]/50 transition-all appearance-none text-sm"
+                    className="w-full bg-ncpor-elevated text-ncpor-primary px-4 py-2.5 border border-ncpor-divider rounded-xl focus:outline-none focus:border-ncpor-accent/50 transition-all appearance-none text-sm"
                   >
                     {categories.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
                   </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-[#666666]">
+                  <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-ncpor-muted">
                     <Icon path={PATHS.chevron} cls="w-4 h-4" />
                   </div>
                 </div>
               </div>
               {/* Year */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-widest text-[#666666] mb-2">Year</label>
+                <label className="block text-xs font-semibold uppercase tracking-widest text-ncpor-secondary mb-2">Year</label>
                 <input
                   type="number" name="year" value={formData.year} onChange={handleChange} min="2000" max="2030"
-                  className="w-full bg-[#0A0A0A] text-[#F5F5F5] px-4 py-2.5 border border-[#292929] rounded-xl focus:outline-none focus:border-[#FF6A2A]/50 transition-all placeholder:text-[#666666]/50 text-sm"
+                  className="w-full bg-ncpor-elevated text-ncpor-primary px-4 py-2.5 border border-ncpor-divider rounded-xl focus:outline-none focus:border-ncpor-accent/50 transition-all placeholder:text-ncpor-muted/50 text-sm"
                   placeholder="e.g. 2024"
                 />
               </div>
@@ -610,35 +601,35 @@ const Upload = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {/* Expedition */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-widest text-[#666666] mb-2">Expedition Name</label>
+                <label className="block text-xs font-semibold uppercase tracking-widest text-ncpor-secondary mb-2">Expedition Name</label>
                 <input
                   type="text" name="expedition_name" value={formData.expedition_name} onChange={handleChange}
-                  className="w-full bg-[#0A0A0A] text-[#F5F5F5] px-4 py-2.5 border border-[#292929] rounded-xl focus:outline-none focus:border-[#FF6A2A]/50 transition-all placeholder:text-[#666666]/50 text-sm"
+                  className="w-full bg-ncpor-elevated text-ncpor-primary px-4 py-2.5 border border-ncpor-divider rounded-xl focus:outline-none focus:border-ncpor-accent/50 transition-all placeholder:text-ncpor-muted/50 text-sm"
                   placeholder="e.g. ICE-2024"
                 />
               </div>
               {/* Tags */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-widest text-[#666666] mb-2">Tags</label>
+                <label className="block text-xs font-semibold uppercase tracking-widest text-ncpor-secondary mb-2">Tags</label>
                 <input
                   type="text" name="tags" value={formData.tags} onChange={handleChange}
-                  className="w-full bg-[#0A0A0A] text-[#F5F5F5] px-4 py-2.5 border border-[#292929] rounded-xl focus:outline-none focus:border-[#FF6A2A]/50 transition-all placeholder:text-[#666666]/50 text-sm"
+                  className="w-full bg-ncpor-elevated text-ncpor-primary px-4 py-2.5 border border-ncpor-divider rounded-xl focus:outline-none focus:border-ncpor-accent/50 transition-all placeholder:text-ncpor-muted/50 text-sm"
                   placeholder="climate, Antarctica, research"
                 />
               </div>
             </div>
 
             {/* Submit row */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#292929]">
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-ncpor-divider">
               <button
                 type="button" onClick={() => navigate('/')}
-                className="px-5 py-2.5 border border-[#292929] text-[#A0A0A0] rounded-xl hover:bg-[#181818] hover:text-[#F5F5F5] transition-all text-sm font-medium"
+                className="px-5 py-2.5 border border-ncpor-divider text-ncpor-secondary rounded-xl hover:bg-ncpor-elevated hover:text-ncpor-primary transition-all text-sm font-medium"
               >
                 Cancel
               </button>
               <button
                 type="submit" disabled={loading}
-                className="flex items-center gap-2 px-7 py-2.5 bg-[#FF6A2A] text-[#070707] font-semibold rounded-xl hover:bg-[#FF7A3D] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                className="flex items-center gap-2 px-7 py-2.5 bg-ncpor-accent text-[#05080F] font-semibold rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm shadow-sm"
               >
                 {loading ? (
                   <>

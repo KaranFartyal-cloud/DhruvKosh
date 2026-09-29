@@ -89,19 +89,19 @@ const QuizQuestion = ({ question, index }) => {
           Check Answer
         </button>
       ) : (
-        <div className={`mt-6 p-4 rounded-lg flex items-start space-x-3 ${isCorrect ? 'bg-green-50 border border-green-200' : 'bg-orange-50 border border-orange-200'}`}>
+        <div className={`mt-6 p-4 rounded-lg flex items-start space-x-3 ${isCorrect ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
           <div className="mt-0.5">
             {isCorrect ? (
-              <CheckCircle className="h-5 w-5 text-green-600" />
+              <CheckCircle className="h-5 w-5 text-emerald-400" />
             ) : (
-              <XCircle className="h-5 w-5 text-orange-600" />
+              <XCircle className="h-5 w-5 text-red-400" />
             )}
           </div>
           <div>
-            <p className={`font-medium ${isCorrect ? 'text-green-800' : 'text-orange-800'}`}>
+            <p className={`font-medium ${isCorrect ? 'text-emerald-300' : 'text-red-300'}`}>
               {isCorrect ? 'Correct!' : 'Incorrect.'}
             </p>
-            <p className="text-slate-700 mt-1">{question.explanation}</p>
+            <p className="text-ncpor-secondary mt-1 text-sm">{question.explanation}</p>
           </div>
         </div>
       )}

@@ -27,28 +27,51 @@ export const useCountUp = (target, duration = 800) => {
   return display;
 };
 
+// Shared observer for reveal animations
+let sharedObserver = null;
+const observerCallbacks = new Map();
+
+const getSharedObserver = () => {
+  if (!sharedObserver && typeof window !== 'undefined') {
+    sharedObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const callback = observerCallbacks.get(entry.target);
+            if (callback) {
+              callback();
+              sharedObserver.unobserve(entry.target);
+              observerCallbacks.delete(entry.target);
+            }
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+  }
+  return sharedObserver;
+};
+
 /**
  * Returns true once the attached ref element enters the viewport.
- * The `once` flag (default true) means it never reverts.
+ * Uses a single shared IntersectionObserver to prevent memory leaks.
  */
-export const useInView = (options = {}) => {
+export const useInView = () => {
   const ref = useRef(null);
   const [inView, setInView] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          if (options.once !== false) obs.disconnect();
-        }
-      },
-      { threshold: options.threshold ?? 0.15, ...options }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
+
+    const observer = getSharedObserver();
+    observerCallbacks.set(el, () => setInView(true));
+    observer.observe(el);
+
+    return () => {
+      observerCallbacks.delete(el);
+      observer.unobserve(el);
+    };
   }, []);
 
   return [ref, inView];

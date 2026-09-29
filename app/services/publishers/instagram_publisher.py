@@ -82,10 +82,22 @@ class InstagramPublisher(BasePublisher):
                     
                 media_id = publish_data.get("id")
                 
+                # Fetch the real permalink from the Graph API
+                real_url = None
+                try:
+                    permalink_res = await client.get(
+                        f"https://graph.facebook.com/{self.api_version}/{media_id}",
+                        params={"fields": "permalink", "access_token": self.access_token}
+                    )
+                    permalink_data = permalink_res.json()
+                    real_url = permalink_data.get("permalink")
+                except Exception:
+                    pass  # No link is better than a broken one
+                
                 return PublishResult(
-                    success=True, 
+                    success=True,
                     external_id=media_id,
-                    url=f"https://instagram.com/p/{media_id}" # Simplified URL, real permalink would need another API call
+                    url=real_url  # None shown as 'Link unavailable' rather than broken URL
                 )
                 
         except Exception as e:
