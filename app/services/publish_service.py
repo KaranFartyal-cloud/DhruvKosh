@@ -35,8 +35,16 @@ def start_scheduler():
                             replace_existing=True
                         )
                     else:
-                        # Missed it, publish now
-                        asyncio.create_task(_execute_publish_job(log.id))
+                        # Past-due: schedule to run immediately via the scheduler
+                        # (asyncio.create_task fails here — no running event loop at startup)
+                        scheduler.add_job(
+                            _execute_publish_job,
+                            'date',
+                            run_date=datetime.utcnow(),
+                            args=[log.id],
+                            id=f"publish_log_{log.id}_recovery",
+                            replace_existing=True
+                        )
         except Exception as e:
             logger.error(f"Error starting scheduler: {e}")
         finally:

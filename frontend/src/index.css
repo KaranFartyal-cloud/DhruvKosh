@@ -2,9 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg: #05080F;
+  --surface: #0D1422;
+  --surface-subtle: #111B2E;
+  --border: rgba(255, 255, 255, 0.10);
+  --border-hover: rgba(127, 231, 245, 0.40);
+  --accent: #7FE7F5;
+  --accent-glow: rgba(127, 231, 245, 0.20);
+  --secondary: #2F5FA8;
+  --text: #EAF0F8;
+  --text-muted: #8592A6;
+  color-scheme: dark;
+}
+
+html.light, body.light, .light {
+  --bg: #F4F7FB;
+  --surface: #FFFFFF;
+  --surface-subtle: #E8EEF5;
+  --border: rgba(11, 27, 51, 0.10);
+  --border-hover: rgba(10, 124, 140, 0.40);
+  --accent: #0A7C8C;
+  --accent-glow: rgba(10, 124, 140, 0.20);
+  --secondary: #2F5FA8;
+  --text: #0B1B33;
+  --text-muted: #66758C;
+  color-scheme: light;
+}
+
 @layer base {
   body {
-    @apply bg-ncpor-bg text-ncpor-primary font-sans;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-display font-medium tracking-wide;
@@ -38,13 +69,13 @@
   .stagger-10 { animation-delay: 500ms; }
   .stagger-12 { animation-delay: 600ms; }
 
-  /* ── Card hover: GPU-only properties ── */
+  /* ── Card hover: 6px lift, accent-colored border ── */
   .card-hover {
-    @apply transition-all duration-220 ease-out;
+    @apply transition-transform transition-colors duration-220 ease-out;
   }
   .card-hover:hover {
-    transform: translateY(-3px);
-    @apply border-ncpor-accent/40 shadow-premium-hover;
+    transform: translateY(-6px);
+    @apply border-ncpor-accent;
   }
 
   /* ── Button press feel ── */
@@ -56,9 +87,9 @@
   .skeleton {
     background: linear-gradient(
       90deg,
-      #171717 25%,
-      #1c1c1c 50%,
-      #171717 75%
+      var(--surface) 25%,
+      var(--surface-subtle) 50%,
+      var(--surface) 75%
     );
     background-size: 200% auto;
     @apply animate-shimmer rounded;
@@ -69,12 +100,12 @@
     animation: fadeUp 0.32s cubic-bezier(0.25,1,0.5,1) both;
   }
 
-  /* ── Progress bar animation: triggered via JS by adding class ── */
+  /* ── Progress bar animation ── */
   .progress-animate {
     animation: progressFill 0.9s cubic-bezier(0.25,1,0.5,1) both;
   }
 
-  /* ── Accent sweep: light sweep across card on hover ── */
+  /* ── Accent sweep: clean cyan/teal sweep ── */
   .sweep-hover {
     position: relative;
     overflow: hidden;
@@ -83,28 +114,13 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(105deg, transparent 40%, rgba(255,106,42,0.04) 50%, transparent 60%);
+    background: linear-gradient(105deg, transparent 40%, var(--accent-glow) 50%, transparent 60%);
     background-size: 200% 100%;
     background-position: -200% center;
     transition: background-position 0.5s ease;
   }
   .sweep-hover:hover::after {
     background-position: 200% center;
-  }
-
-  /* ── Signature NCPOR polar grid background ── */
-  .polar-grid {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0.022;
-    background-image:
-      linear-gradient(rgba(255,106,42,0.6) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,106,42,0.6) 1px, transparent 1px);
-    background-size: 48px 48px;
-    background-position: center center;
-    animation: fadeIn 1.5s 0.3s ease-out both;
   }
 
   /* ── Tooltip fade ── */
@@ -119,7 +135,6 @@
   }
 }
 
-/* ── Legacy animate-fade-in kept for backward compat ── */
 @layer utilities {
   .animate-fade-in {
     animation: fadeIn 0.4s ease-out forwards;

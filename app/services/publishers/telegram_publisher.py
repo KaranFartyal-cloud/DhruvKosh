@@ -29,7 +29,13 @@ class TelegramPublisher(BasePublisher):
                             response.raise_for_status()
                             result = response.json()
                             message_id = str(result["result"]["message_id"])
-                            return PublishResult(success=True, external_id=message_id, url=f"https://t.me/c/{str(self.channel_id).replace('-100', '')}/{message_id}")
+                            is_public = not str(self.channel_id).startswith('-')
+                            if is_public:
+                                username = str(self.channel_id).lstrip('@')
+                                url = f"https://t.me/{username}/{message_id}"
+                            else:
+                                url = "PRIVATE_TELEGRAM"
+                            return PublishResult(success=True, external_id=message_id, url=url)
                     else:
                         # Send photo first, then text
                         with open(image_path, "rb") as f:
@@ -45,7 +51,13 @@ class TelegramPublisher(BasePublisher):
                         
                         result = text_response.json()
                         message_id = str(result["result"]["message_id"])
-                        return PublishResult(success=True, external_id=message_id, url=f"https://t.me/c/{str(self.channel_id).replace('-100', '')}/{message_id}")
+                        is_public = not str(self.channel_id).startswith('-')
+                        if is_public:
+                            username = str(self.channel_id).lstrip('@')
+                            url = f"https://t.me/{username}/{message_id}"
+                        else:
+                            url = "PRIVATE_TELEGRAM"
+                        return PublishResult(success=True, external_id=message_id, url=url)
                 else:
                     # Send text only
                     data = {"chat_id": self.channel_id, "text": text}
@@ -53,7 +65,13 @@ class TelegramPublisher(BasePublisher):
                     response.raise_for_status()
                     result = response.json()
                     message_id = str(result["result"]["message_id"])
-                    return PublishResult(success=True, external_id=message_id, url=f"https://t.me/c/{str(self.channel_id).replace('-100', '')}/{message_id}")
+                    is_public = not str(self.channel_id).startswith('-')
+                    if is_public:
+                        username = str(self.channel_id).lstrip('@')
+                        url = f"https://t.me/{username}/{message_id}"
+                    else:
+                        url = "PRIVATE_TELEGRAM"
+                    return PublishResult(success=True, external_id=message_id, url=url)
                     
         except httpx.HTTPStatusError as e:
             error_msg = f"Telegram API error: {e.response.status_code} - {e.response.text}"

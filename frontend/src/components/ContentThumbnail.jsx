@@ -19,7 +19,7 @@ const ContentThumbnail = ({ item }) => {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    // If we already have a thumbnail (e.g. photo/video from backend), use it
+    // If item has thumbnail already, use it
     if (item.thumbnail) {
       setThumbnailUrl(item.thumbnail);
       setLoading(false);
@@ -38,13 +38,12 @@ const ContentThumbnail = ({ item }) => {
         try {
           const loadingTask = pdfjsLib.getDocument({
             url: item.download_url,
-            // Optimization for partial downloads
             disableAutoFetch: true,
             disableStream: true
           });
           const pdf = await loadingTask.promise;
           const page = await pdf.getPage(1);
-          const viewport = page.getViewport({ scale: 0.8 }); // Moderate scale for card preview
+          const viewport = page.getViewport({ scale: 0.8 });
           const canvas = document.createElement("canvas");
           canvas.width = viewport.width;
           canvas.height = viewport.height;
@@ -70,7 +69,6 @@ const ContentThumbnail = ({ item }) => {
         isMounted = false;
       };
     } else {
-      // For datasets without thumbnails, or other unhandled types
       setLoading(false);
     }
   }, [item, item.thumbnail, item.download_url, item.content_type]);
@@ -79,38 +77,46 @@ const ContentThumbnail = ({ item }) => {
 
   if (loading) {
     return (
-      <div className="absolute inset-0 bg-ncpor-panel animate-pulse flex items-center justify-center">
-        <div className="w-full h-full bg-gradient-to-r from-ncpor-panel via-ncpor-divider/20 to-ncpor-panel shimmer" />
+      <div className="absolute inset-0 bg-ncpor-panel flex items-center justify-center">
+        <div className="w-full h-full skeleton" />
       </div>
     );
   }
 
+  // If thumbnail loaded without error
   if (thumbnailUrl && !error) {
     return (
-      <div className="absolute inset-0 flex items-center justify-center bg-[#111111] transition-transform duration-300 ease-out group-hover:scale-[1.02]">
+      <div className="absolute inset-0 flex items-center justify-center bg-ncpor-elevated transition-transform duration-300 ease-out group-hover:scale-[1.04]">
         <img 
           src={thumbnailUrl} 
-          alt={`${item.title} preview`}
-          className="max-w-full max-h-[190px] object-contain shadow-[0_4px_15px_rgba(0,0,0,0.5)] border border-ncpor-divider/30 bg-white"
+          alt={`${item.title || 'Polar archive record'} preview`}
+          loading="lazy"
+          decoding="async"
+          width="100%"
+          height="100%"
+          onError={() => setError(true)}
+          className="max-w-full max-h-[190px] object-contain shadow-md border border-ncpor-divider/20 bg-white/5"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent opacity-50 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ncpor-bg/80 via-transparent to-transparent opacity-60 pointer-events-none" />
         
-        {/* Subtle metadata overlay */}
-        <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm border border-ncpor-divider/50 rounded px-2 py-0.5 pointer-events-none">
-          <span className="text-[9px] font-bold tracking-widest text-ncpor-accent uppercase">{item.content_type}</span>
+        {/* Metadata pill badge */}
+        <div className="absolute bottom-2 right-2 bg-ncpor-bg/95 border border-ncpor-divider rounded px-2 py-0.5 pointer-events-none">
+          <span className="text-[9px] font-medium tracking-wider text-ncpor-accent capitalize">{item.content_type}</span>
         </div>
       </div>
     );
   }
 
-  // Fallback state (Error or No Visual Asset)
+  // Clean Fallback Tile with Soft Gradient & File-Type Icon (Never browser broken icon)
   return (
-    <div className="absolute inset-0 bg-ncpor-panel flex flex-col items-center justify-center overflow-hidden border-b border-ncpor-divider/10 transition-transform duration-300 ease-out group-hover:scale-[1.02]">
-      <IconComponent className="w-10 h-10 text-ncpor-muted/50 mb-3 transition-colors duration-300 group-hover:text-ncpor-accent/80" strokeWidth={1} />
-      <span className="text-[9px] font-medium text-ncpor-muted/60 uppercase tracking-widest text-center px-4">
-        {error ? "Preview Unavailable" : item.content_type}
+    <div className="absolute inset-0 bg-gradient-to-br from-ncpor-panel to-ncpor-elevated flex flex-col items-center justify-center overflow-hidden border-b border-ncpor-divider/20 transition-transform duration-300 ease-out group-hover:scale-[1.04]">
+      <div className="w-12 h-12 rounded-xl bg-ncpor-accent/10 border border-ncpor-accent/20 flex items-center justify-center mb-2.5 transition-colors duration-300 group-hover:border-ncpor-accent/40">
+        <IconComponent className="w-6 h-6 text-ncpor-accent transition-transform duration-300 group-hover:scale-110" strokeWidth={1.5} />
+      </div>
+      <span className="text-[10px] font-medium text-ncpor-secondary capitalize tracking-wider text-center px-4">
+        {item.content_type || 'Scientific Record'}
       </span>
-      <div className="absolute inset-0 bg-gradient-to-t from-ncpor-sidebar via-transparent to-transparent opacity-80 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-ncpor-bg/40 via-transparent to-transparent pointer-events-none" />
     </div>
   );
 };

@@ -1,15 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import { activitiesAPI, contentAPI } from '../utils/api';
 import { useCountUp, useInView } from '../hooks/useAnimation';
 
 /* ── Animated KPI card ──────────────────────────────────────────────────── */
-const KpiCard = ({ label, value, icon, delay = 0 }) => {
+const KpiCard = memo(({ label, value, icon, delay = 0 }) => {
   const count = useCountUp(value, 750);
   return (
     <div
       className="bg-ncpor-panel border border-ncpor-divider rounded-xl shadow-premium p-6
         relative overflow-hidden group sweep-hover
-        hover:-translate-y-[3px] hover:border-ncpor-accent/30 hover:shadow-premium-hover
+        hover:-translate-y-[3px] hover:border-ncpor-accent/30
         transition-all duration-220 ease-out animate-fade-up"
       style={{ animationDelay: `${delay}ms` }}
     >
@@ -23,10 +23,10 @@ const KpiCard = ({ label, value, icon, delay = 0 }) => {
       <div className="text-5xl font-display text-ncpor-primary tabular-nums">{count}</div>
     </div>
   );
-};
+});
 
 /* ── Animated category bar ──────────────────────────────────────────────── */
-const CategoryBar = ({ category, count, maxCount, delay = 0 }) => {
+const CategoryBar = memo(({ category, count, maxCount, delay = 0 }) => {
   const [ref, inView] = useInView();
   const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
 
@@ -56,15 +56,15 @@ const CategoryBar = ({ category, count, maxCount, delay = 0 }) => {
       </div>
     </div>
   );
-};
+});
 
 /* ── Activity item ──────────────────────────────────────────────────────── */
-const ActivityItem = ({ activity, index }) => (
+const ActivityItem = memo(({ activity, index }) => (
   <div
     className="bg-ncpor-bg/30 border border-ncpor-divider rounded-xl p-5
-      hover:-translate-y-[2px] hover:border-ncpor-accent/30 hover:shadow-premium
+      hover:-translate-y-[2px] hover:border-ncpor-accent/30
       transition-all duration-220 ease-out animate-fade-up"
-    style={{ animationDelay: `${300 + index * 60}ms` }}
+    style={{ animationDelay: `${300 + (index < 8 ? index * 60 : 0)}ms` }}
   >
     <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-2">
       <div>
@@ -80,7 +80,7 @@ const ActivityItem = ({ activity, index }) => (
       )}
     </div>
   </div>
-);
+));
 
 /* ── Dashboard ──────────────────────────────────────────────────────────── */
 const Dashboard = () => {
@@ -155,7 +155,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto w-full">
+    <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-display text-ncpor-primary mb-1 tracking-tight animate-fade-up" style={{ animationDelay: '0ms' }}>

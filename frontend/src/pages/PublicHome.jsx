@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { FileText, BookOpen, ArrowRight, Globe } from 'lucide-react';
 import * as api from '../api/generated';
+import PolarGlobeHero from '../components/PolarGlobeHero';
 
 const PublicHome = () => {
   const { data: contentList, isLoading, isError } = useQuery({
@@ -11,10 +12,21 @@ const PublicHome = () => {
   });
   
   const [lang, setLang] = useState('en');
+  const [searchFilter, setSearchFilter] = useState('');
 
-  // Filter content by category
-  const allArticles = contentList?.filter(c => c.content_category === 'website_article') || [];
-  const allExplainers = contentList?.filter(c => c.content_category === 'educational_explainer') || [];
+  // Filter content by category and search
+  const filteredContent = useMemo(() => {
+    if (!contentList) return [];
+    if (!searchFilter.trim()) return contentList;
+    const q = searchFilter.toLowerCase();
+    return contentList.filter(c => 
+      c.generated_title?.toLowerCase().includes(q) ||
+      c.generated_text?.toLowerCase().includes(q)
+    );
+  }, [contentList, searchFilter]);
+
+  const allArticles = filteredContent?.filter(c => c.content_category === 'website_article') || [];
+  const allExplainers = filteredContent?.filter(c => c.content_category === 'educational_explainer') || [];
   
   // Group by expedition to show alternatives if Hindi is missing
   const getDisplayItems = (items) => {
@@ -41,27 +53,24 @@ const PublicHome = () => {
   const displayExplainers = getDisplayItems(allExplainers);
 
   return (
-    <div>
-      <div className="flex justify-end mb-4">
-        <div className="bg-white rounded-full p-1 shadow-sm border border-slate-200 flex items-center">
+    <div className="space-y-10">
+      <div className="flex justify-end mb-2">
+        <div className="bg-white dark:bg-[#0D1422] rounded-full p-1 shadow-sm border border-slate-200 dark:border-white/10 flex items-center">
           <Globe className="h-4 w-4 text-slate-400 ml-2 mr-1" />
-          <button onClick={() => setLang('en')} className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${lang === 'en' ? 'bg-ocean-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>EN</button>
-          <button onClick={() => setLang('hi')} className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${lang === 'hi' ? 'bg-ocean-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>हिन्दी</button>
+          <button onClick={() => setLang('en')} className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${lang === 'en' ? 'bg-ocean-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5'}`}>EN</button>
+          <button onClick={() => setLang('hi')} className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${lang === 'hi' ? 'bg-ocean-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5'}`}>हिन्दी</button>
         </div>
       </div>
       
-      <div className="bg-ocean-900 rounded-2xl p-12 text-center text-white mb-12 shadow-xl relative overflow-hidden">
-        <div className="relative z-10">
-          <h1 className={`text-4xl md:text-5xl font-bold mb-4 ${lang === 'hi' ? 'font-hind' : 'font-serif'}`}>
-             {lang === 'en' ? "Discover India's Polar Frontier" : "भारत की ध्रुवीय अनुसंधान खोजें"}
-          </h1>
-          <p className="text-xl text-ocean-100 max-w-2xl mx-auto mb-8">
-             {lang === 'en' ? "Explore the latest scientific findings, educational resources, and stories from our expeditions to Antarctica, the Arctic, and the Himalayas." : "अंटार्कटिका, आर्कटिक और हिमालय के हमारे अभियानों से नवीनतम वैज्ञानिक निष्कर्ष, शैक्षिक संसाधन और कहानियों का अन्वेषण करें।"}
-          </p>
-          <a href="#latest" className="bg-white text-ocean-900 px-6 py-3 rounded-full font-bold shadow-lg hover:bg-ice-100 transition-colors inline-block">
-             {lang === 'en' ? "Start Exploring" : "अन्वेषण शुरू करें"}
-          </a>
-        </div>
+      {/* ── Premium Polar Globe Hero Section (DhruvKosh NCPOR) ── */}
+      <div className="rounded-3xl overflow-hidden shadow-2xl border border-white/10 mb-12">
+        <PolarGlobeHero 
+          onSearch={(query) => {
+            setSearchFilter(query);
+            const target = document.getElementById('latest');
+            if (target) target.scrollIntoView({ behavior: 'smooth' });
+          }}
+        />
       </div>
 
       {isLoading ? (

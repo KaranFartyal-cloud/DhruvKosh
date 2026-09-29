@@ -69,9 +69,25 @@ def get_publish_log(
     total = query.count()
     logs = query.order_by(PublishLog.created_at.desc()).offset(skip).limit(limit).all()
     
+    items = []
+    for log in logs:
+        log_dict = {
+            "id": log.id,
+            "generated_content_id": log.generated_content_id,
+            "platform": log.platform,
+            "status": log.status,
+            "external_post_id": log.external_post_id,
+            "external_url": log.external_url,
+            "error_message": log.error_message,
+            "scheduled_at": log.scheduled_at,
+            "created_at": log.created_at,
+            "text_preview": log.generated_content.generated_text[:140] + "..." if log.generated_content and log.generated_content.generated_text else ""
+        }
+        items.append(log_dict)
+        
     return {
         "total": total,
-        "items": logs
+        "items": items
     }
 
 @router.get("/{generated_content_id}/status", response_model=List[PublishLogResponse])
