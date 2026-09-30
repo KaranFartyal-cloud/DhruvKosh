@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import publishAPI from '../api/publish';
+import api from '../utils/api';
 
 const PublishPanel = ({ post, onPublishSuccess }) => {
   const [platforms, setPlatforms] = useState({ configured_platforms: [], publish_mode: 'dry_run' });
@@ -9,6 +10,10 @@ const PublishPanel = ({ post, onPublishSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [publishStatus, setPublishStatus] = useState([]); // from API
   const [localText, setLocalText] = useState(post.generated_text);
+  const [uploadedMediaId, setUploadedMediaId] = useState(post.suggested_media_id || null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     setLocalText(post.generated_text);
@@ -33,12 +38,31 @@ const PublishPanel = ({ post, onPublishSuccess }) => {
     }).catch(e => console.error(e));
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.post('/api/publish/upload-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setUploadedMediaId(res.data.media_id);
+      setImagePreview(URL.createObjectURL(file));
+    } catch (e) {
+      alert('Image upload failed: ' + (e.response?.data?.detail || e.message));
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
   const handlePublish = async () => {
     try {
       setLoading(true);
       await publishAPI.publishContent(post.id, {
         platforms: selectedPlatforms,
-        media_id: post.suggested_media_id,
+        media_id: uploadedMediaId,
         scheduled_at: scheduleDate ? new Date(scheduleDate).toISOString() : null
       });
       setIsModalOpen(false);
@@ -99,6 +123,46 @@ const PublishPanel = ({ post, onPublishSuccess }) => {
           </span>
         </div>
       )}
+
+      {/* Image Upload Section */}
+      <div className="mb-4 border border-ncpor-divider rounded-lg p-3 bg-ncpor-bg/30">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-ncpor-secondary mb-2">Attach Image <span className="text-ncpor-accent">(required for Instagram)</span></label>
+        <div className="flex items-center gap-3">
+          {imagePreview ? (
+            <div className="relative flex-shrink-0">
+              <img src={imagePreview} alt="Preview" className="w-16 h-16 object-cover rounded-lg border border-ncpor-divider" />
+              <button
+                onClick={() => { setImagePreview(null); setUploadedMediaId(post.suggested_media_id || null); if(fileInputRef.current) fileInputRef.current.value=''; }}
+                className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs font-bold leading-none"
+                title="Remove image"
+              >×</button>
+            </div>
+          ) : uploadedMediaId ? (
+            <div className="w-16 h-16 rounded-lg border border-ncpor-accent/40 bg-ncpor-accent/10 flex items-center justify-center flex-shrink-0">
+              <svg className="w-6 h-6 text-ncpor-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+          ) : null}
+          <div className="flex flex-col gap-1.5">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={imageUploading || !isApproved}
+              className="px-4 py-2 border border-ncpor-divider text-ncpor-secondary hover:border-ncpor-accent hover:text-ncpor-accent rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+              {imageUploading ? 'Uploading...' : imagePreview ? 'Change Image' : 'Upload Image'}
+            </button>
+            {uploadedMediaId && !imagePreview && <span className="text-xs text-ncpor-accent">Suggested media attached (ID: {uploadedMediaId})</span>}
+            {!uploadedMediaId && <span className="text-xs text-ncpor-secondary opacity-70">No image selected</span>}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+        </div>
+      </div>
 
       <div className="flex flex-wrap gap-4 items-center justify-between border-t border-ncpor-divider pt-4">
         <div className="flex items-center space-x-2">

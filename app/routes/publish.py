@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 import os
+import uuid
+import shutil
 
 from app.database import get_db
-from app.models import PublishLog, PublishLogStatus
+from app.models import PublishLog, PublishLogStatus, MediaItem
 from app.schemas import PublishLogResponse
 from app.services.publishers.registry import get_available_platforms
 from app.services.publish_service import publish_content, cancel_scheduled_publish
@@ -15,6 +17,10 @@ from fastapi.responses import RedirectResponse
 import json
 
 router = APIRouter()
+
+UPLOAD_DIR = "uploads"
+ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/heic", "image/heif"]
+
 
 class PublishRequest(BaseModel):
     platforms: List[str]
@@ -31,6 +37,42 @@ def get_platforms():
         "configured_platforms": get_available_platforms(),
         "publish_mode": os.getenv("PUBLISH_MODE", "dry_run")
     }
+
+@router.post("/upload-image")
+async def upload_publish_image(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """Upload an image to attach when publishing (e.g. for Instagram)."""
+    content = await file.read()
+    
+    # Validate file type
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=400, detail=f"Invalid image type: {file.content_type}. Allowed: JPEG, PNG, GIF, WebP")
+    
+    # Save to uploads/publish_images/
+    save_dir = os.path.join(UPLOAD_DIR, "publish_images")
+    os.makedirs(save_dir, exist_ok=True)
+    
+    ext = os.path.splitext(file.filename or "image.jpg")[1] or ".jpg"
+    unique_filename = f"{uuid.uuid4()}{ext}"
+    file_path = os.path.join(save_dir, unique_filename)
+    
+    with open(file_path, "wb") as f:
+        f.write(content)
+    
+    # Create MediaItem record so publish_service can find the file
+    media = MediaItem(
+        expedition_id=1,  # Use default expedition
+        title=file.filename or "Publish Image",
+        media_type="photo",
+        file_path=file_path,
+    )
+    db.add(media)
+    db.commit()
+    db.refresh(media)
+    
+    return {"media_id": media.id, "filename": unique_filename}
 
 @router.get("/log")
 def get_publish_log(
