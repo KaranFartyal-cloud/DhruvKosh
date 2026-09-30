@@ -193,6 +193,7 @@ const Auth = () => {
                <button
                  type="button"
                  onClick={() => {
+                   alert('Google button clicked!');
                    console.log('Google button clicked!');
                    handleGoogleSignIn();
                  }}
