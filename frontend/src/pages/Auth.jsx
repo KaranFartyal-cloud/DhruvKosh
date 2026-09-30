@@ -192,7 +192,10 @@ const Auth = () => {
                       <div className="relative group w-full mb-6 flex justify-center">
                <button
                  type="button"
-                 onClick={handleGoogleSignIn}
+                 onClick={() => {
+                   console.log('Google button clicked!');
+                   handleGoogleSignIn();
+                 }}
                  disabled={loading}
                  className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 font-medium py-3 rounded-lg hover:bg-gray-50 transition-all active:scale-[0.98] border border-gray-300 shadow-sm"
                >
