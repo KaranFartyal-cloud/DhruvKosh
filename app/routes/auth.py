@@ -130,20 +130,21 @@ def google_login(request: GoogleAuthRequest, db: Session = Depends(get_db)):
             f"https://oauth2.googleapis.com/tokeninfo?id_token={request.credential}",
             timeout=10.0
         )
-        
+
         if response.status_code != 200:
+            print(f"Google tokeninfo failed: {response.status_code} - {response.text}")
             raise HTTPException(status_code=401, detail="Invalid Google ID token")
-        
+
         token_data = response.json()
         email = token_data.get('email')
         name = token_data.get('name', email.split('@')[0] if email else 'Google User')
-        
+
         if not email:
             raise HTTPException(status_code=400, detail="Could not extract email from Google credential")
-        
+
         # Check if user exists
         user = db.query(User).filter(User.email == email).first()
-        
+
         # Create user if doesn't exist
         if not user:
             user = User(
@@ -155,21 +156,27 @@ def google_login(request: GoogleAuthRequest, db: Session = Depends(get_db)):
             db.add(user)
             db.commit()
             db.refresh(user)
-        
+
         # Generate JWT token for our app
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={"sub": user.id, "role": user.role.value},
             expires_delta=access_token_expires
         )
-        
+
         return LoginResponse(
             access_token=access_token,
             token_type="bearer",
             user=UserSchema.from_orm(user)
         )
-        
-    except httpx.TimeoutException:
+
+    except httpx.TimeoutException as e:
+        print(f"Google auth timeout: {str(e)}")
         raise HTTPException(status_code=504, detail="Google verification timeout")
+    except HTTPException:
+        raise
     except Exception as e:
+        print(f"Google auth error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Google auth failed: {str(e)}")
