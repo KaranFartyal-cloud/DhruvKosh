@@ -2,19 +2,30 @@
   "version": 2,
   "builds": [
     {
-      "src": "app/main.py",
+      "src": "vercel.py",
       "use": "@vercel/python"
+    },
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "frontend/dist"
+      }
     }
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "dest": "vercel.py"
+    },
+    {
       "src": "/(.*)",
-      "dest": "app/main.py"
+      "dest": "frontend/dist/$1"
     }
   ],
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
