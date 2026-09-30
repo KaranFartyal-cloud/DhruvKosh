@@ -21,13 +21,10 @@ const Layout = () => {
     window.location.href = '/login';
   };
 
-  // Notifications state
+  // Notifications state (in-memory, empty until dynamic events occur)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef(null);
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Upload Complete', message: 'Maitri weather dataset processed successfully.', time: '2m ago', read: false },
-    { id: 2, title: 'New Comment', message: 'Dr. Sharma commented on your paper.', time: '1h ago', read: false },
-  ]);
+  const [notifications, setNotifications] = useState([]);
   const unreadCount = notifications.filter(n => !n.read).length;
 
   useEffect(() => {

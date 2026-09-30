@@ -1,3 +1,4 @@
+// Verify coordinates and status with NCPOR before publishing.
 // NCPOR Polar & Oceanic Research Stations, Bases, and Cryosphere Observatories
 
 export const stations = [
@@ -14,7 +15,6 @@ export const stations = [
     year: "1989",
     elevation: "117 m",
     description: "India's second permanent research base in Antarctica, operating year-round with multidisciplinary atmospheric and geological laboratories.",
-    datasetCount: 142,
     labelPlacement: "top-right"
   },
   {
@@ -29,7 +29,6 @@ export const stations = [
     year: "2012",
     elevation: "35 m",
     description: "India's third modern Antarctic research facility, constructed from modular containers for cutting-edge oceanographic and polar research.",
-    datasetCount: 189,
     labelPlacement: "right"
   },
   {
@@ -37,14 +36,13 @@ export const stations = [
     name: "Dakshin Gangotri",
     region: "Antarctica",
     place: "Ice Shelf, Queen Maud Land",
-    lat: -70.7500,
-    lon: 11.6333,
-    coordsFormatted: "70°45′00″S, 11°38′00″E",
+    lat: -70.0742,
+    lon: 12.0034,
+    coordsFormatted: "70°04′27″S, 12°00′12″E",
     status: "decommissioned",
-    year: "1983-1990",
+    year: "1984",
     elevation: "20 m",
-    description: "India's historic first permanent base in Antarctica. Decommissioned in 1990 and designated as an Antarctic Historic Site & Supply Depot.",
-    datasetCount: 24,
+    description: "India's historic first permanent base in Antarctica (1984-1990). Decommissioned in 1990 and designated as an Antarctic Historic Site & Supply Depot.",
     labelPlacement: "bottom-left"
   },
   {
@@ -59,7 +57,6 @@ export const stations = [
     year: "Planned 2029",
     elevation: "120 m",
     description: "Proposed next-generation environmental and scientific research station to succeed Maitri with zero-emission architecture.",
-    datasetCount: 0,
     labelPlacement: "bottom-right"
   },
   {
@@ -74,7 +71,6 @@ export const stations = [
     year: "2010 (Ind. Exp.)",
     elevation: "2,835 m",
     description: "Site of India's maiden scientific expedition to the Geographic South Pole traversing 2,250 km from Maitri Station.",
-    datasetCount: 48,
     labelPlacement: "top"
   },
   {
@@ -89,7 +85,6 @@ export const stations = [
     year: "2015",
     elevation: "0 m (Marine)",
     description: "Deep-sea oceanographic mooring array studying Antarctic Bottom Water (AABW) formation and coastal polynya dynamics.",
-    datasetCount: 76,
     labelPlacement: "left"
   },
   {
@@ -104,14 +99,13 @@ export const stations = [
     year: "2018",
     elevation: "3,233 m",
     description: "High-altitude continental ice-core drilling and atmospheric monitoring site on the central Antarctic ice sheet.",
-    datasetCount: 35,
     labelPlacement: "bottom-left"
   },
 
   // ── Arctic (North Polar Region) ─────────────────────────────────────────────
   {
     id: "himadri",
-    name: "Himadri",
+    name: "Himadri Station",
     region: "Arctic",
     place: "Ny-Ålesund, Spitsbergen, Svalbard",
     lat: 78.9233,
@@ -121,12 +115,11 @@ export const stations = [
     year: "2008",
     elevation: "15 m",
     description: "India's permanent Arctic research base located at the world's northernmost scientific settlement in Svalbard, Norway.",
-    datasetCount: 112,
     labelPlacement: "top-right"
   },
   {
     id: "indarc",
-    name: "IndARC",
+    name: "IndARC Observatory",
     region: "Arctic",
     place: "Kongsfjorden Fjord, Svalbard",
     lat: 79.0200,
@@ -136,8 +129,7 @@ export const stations = [
     year: "2014",
     elevation: "-192 m (Subsea)",
     description: "India's first multi-sensor moored underwater observatory in the Arctic measuring real-time seawater salinity, temperature, and Atlantic inflow.",
-    datasetCount: 68,
-    labelPlacement: "bottom-left"
+    labelPlacement: "left"
   },
   {
     id: "gruvebadet",
@@ -151,8 +143,77 @@ export const stations = [
     year: "2015",
     elevation: "42 m",
     description: "Atmospheric aerosol and greenhouse gas monitoring laboratory sampling Arctic air mass transitions and black carbon transport.",
-    datasetCount: 54,
     labelPlacement: "bottom-right"
+  },
+  {
+    id: "svalbard-unis",
+    name: "Longyearbyen UNIS Array",
+    region: "Arctic",
+    place: "Spitsbergen, Svalbard Archipelago",
+    lat: 78.2232,
+    lon: 15.6267,
+    coordsFormatted: "78°13′24″N, 15°37′36″E",
+    status: "active",
+    year: "2009",
+    elevation: "28 m",
+    description: "High Arctic permafrost, glaciology, and meteorological research coordination facility in central Svalbard.",
+    labelPlacement: "bottom-left"
+  },
+  {
+    id: "kongsfjorden-glacier",
+    name: "Kongsfjorden Glacier Array",
+    region: "Arctic",
+    place: "Kronebreen Ice Front, Svalbard",
+    lat: 78.9667,
+    lon: 12.2000,
+    coordsFormatted: "78°58′00″N, 12°12′00″E",
+    status: "active",
+    year: "2016",
+    elevation: "0 m (Tidewater)",
+    description: "Tidewater glacier calving and sediment plume monitoring array tracking marine-terminating Arctic ice dynamics.",
+    labelPlacement: "top-left"
+  },
+  {
+    id: "fram-strait",
+    name: "Fram Strait Gateway",
+    region: "Arctic",
+    place: "Greenland-Svalbard Passage",
+    lat: 79.0000,
+    lon: 0.0000,
+    coordsFormatted: "79°00′00″N, 00°00′00″E",
+    status: "active",
+    year: "2017",
+    elevation: "-2,500 m (Marine)",
+    description: "Deep Arctic Ocean gateway monitoring sea ice export and cold freshwater outflow into the Greenland Sea.",
+    labelPlacement: "left"
+  },
+  {
+    id: "greenland-summit",
+    name: "Greenland Summit Station",
+    region: "Arctic",
+    place: "Central Greenland Ice Sheet",
+    lat: 72.5796,
+    lon: -38.4592,
+    coordsFormatted: "72°34′47″N, 38°27′33″W",
+    status: "active",
+    year: "2012",
+    elevation: "3,216 m",
+    description: "High-altitude polar ice sheet observatory tracking Greenland ice mass balance, palaeoclimate cores, and atmospheric chemistry.",
+    labelPlacement: "top"
+  },
+  {
+    id: "chars-arctic",
+    name: "CHARS High Arctic Base",
+    region: "Arctic",
+    place: "Cambridge Bay, Nunavut, Canada",
+    lat: 69.1167,
+    lon: -105.0500,
+    coordsFormatted: "69°07′00″N, 105°03′00″W",
+    status: "active",
+    year: "2017",
+    elevation: "18 m",
+    description: "Pan-Arctic Canadian High Arctic Research Station monitoring Northwest Passage sea ice dynamics and tundra permafrost thaw.",
+    labelPlacement: "bottom-left"
   },
   {
     id: "arctic-ocean",
@@ -166,7 +227,6 @@ export const stations = [
     year: "2017",
     elevation: "0 m (Sea Ice)",
     description: "High-latitude sea ice thickness and albedo measurement point tracking northern polar amplification and ice shelf shrinkage.",
-    datasetCount: 42,
     labelPlacement: "top"
   },
   {
@@ -181,7 +241,6 @@ export const stations = [
     year: "2011",
     elevation: "25 m",
     description: "Strategic Arctic logistics coordination hub and oceanographic embarkation base for NCPOR polar operations.",
-    datasetCount: 30,
     labelPlacement: "right"
   },
 
@@ -197,13 +256,12 @@ export const stations = [
     status: "active",
     year: "2016",
     elevation: "4,080 m",
-    description: "India's highest remote high-altitude research station dedicated to Himalayan glaciological dynamics, mass balance, and cryosphere hydrological monitoring.",
-    datasetCount: 96,
-    labelPlacement: "right"
+    description: "India's highest permanent remote high-altitude research station dedicated to Himalayan glaciological dynamics, mass balance, and cryosphere hydrological monitoring.",
+    labelPlacement: "top-right"
   },
   {
-    id: "chandra-basin",
-    name: "Sutri Dhaka Glacier Base",
+    id: "sutri-dhaka",
+    name: "Sutri Dhaka Benchmark Base",
     region: "Himalayas",
     place: "Upper Chandra Valley, Himalayas",
     lat: 32.4167,
@@ -213,8 +271,35 @@ export const stations = [
     year: "2014",
     elevation: "4,500 m",
     description: "Continuous benchmark glacier observatory measuring snout retreat, ice velocity, and meltwater discharge in the Western Himalayas.",
-    datasetCount: 52,
     labelPlacement: "top-left"
+  },
+  {
+    id: "chhota-shigri",
+    name: "Chhota Shigri Station",
+    region: "Himalayas",
+    place: "Chandra Valley, Pir Panjal Range",
+    lat: 32.2833,
+    lon: 77.5167,
+    coordsFormatted: "32°17′00″N, 77°31′00″E",
+    status: "active",
+    year: "2010",
+    elevation: "4,400 m",
+    description: "Long-term reference benchmark glacier in the Indian Himalayas measuring glacier mass balance and meteorological forcing.",
+    labelPlacement: "bottom-left"
+  },
+  {
+    id: "samudra-tapu",
+    name: "Samudra Tapu Lake Base",
+    region: "Himalayas",
+    place: "Chandra Basin, Lahaul & Spiti",
+    lat: 32.4833,
+    lon: 77.4500,
+    coordsFormatted: "32°29′00″N, 77°27′00″E",
+    status: "active",
+    year: "2015",
+    elevation: "4,200 m",
+    description: "Moraine-dammed glacial lake monitoring observatory tracking Glacial Lake Outburst Flood (GLOF) risks and moraine stability.",
+    labelPlacement: "top"
   },
   {
     id: "batal",
@@ -228,8 +313,77 @@ export const stations = [
     year: "2013",
     elevation: "3,960 m",
     description: "Field staging base and meteorological station supporting automated weather station (AWS) networks across high Himalayan passes.",
-    datasetCount: 40,
+    labelPlacement: "bottom-right"
+  },
+  {
+    id: "patsio",
+    name: "Patsio Cryosphere Base",
+    region: "Himalayas",
+    place: "Great Himalayan Range, HP",
+    lat: 32.7556,
+    lon: 77.2611,
+    coordsFormatted: "32°45′20″N, 77°15′40″E",
+    status: "active",
+    year: "2012",
+    elevation: "3,800 m",
+    description: "High-altitude snow physics, seasonal snowpack dynamics, and precipitation isotope sampling array along the Manali-Leh corridor.",
+    labelPlacement: "top-left"
+  },
+  {
+    id: "siachen-baseline",
+    name: "Siachen Cryo-Baseline",
+    region: "Himalayas",
+    place: "Karakoram Range, Ladakh",
+    lat: 35.4219,
+    lon: 77.1094,
+    coordsFormatted: "35°25′19″N, 77°06′34″E",
+    status: "active",
+    year: "2018",
+    elevation: "5,400 m",
+    description: "Karakoram anomaly baseline monitoring sub-zero glacier dynamics, supraglacial debris cover, and meltwater discharge.",
+    labelPlacement: "top-right"
+  },
+  {
+    id: "dokriani",
+    name: "Dokriani Benchmark Base",
+    region: "Himalayas",
+    place: "Bhagirathi Basin, Garhwal, UK",
+    lat: 30.8333,
+    lon: 78.8333,
+    coordsFormatted: "30°50′00″N, 78°50′00″E",
+    status: "active",
+    year: "2011",
+    elevation: "3,900 m",
+    description: "Central Himalayan benchmark glacier monitoring snout recession, ice thickness, and debris-cover thermophysics.",
     labelPlacement: "bottom-left"
+  },
+  {
+    id: "chorabari",
+    name: "Chorabari Kedarnath Base",
+    region: "Himalayas",
+    place: "Mandakini Basin, Garhwal, UK",
+    lat: 30.7667,
+    lon: 79.0500,
+    coordsFormatted: "30°46′00″N, 79°03′00″E",
+    status: "active",
+    year: "2013",
+    elevation: "3,820 m",
+    description: "High-altitude proglacial lake dynamics, snow-cover evolution, and extreme hydro-meteorological tracking.",
+    labelPlacement: "bottom-right"
+  },
+  {
+    id: "changme-khangpu",
+    name: "Changme Khangpu Base",
+    region: "Himalayas",
+    place: "North Sikkim, Eastern Himalaya",
+    lat: 27.9667,
+    lon: 88.7000,
+    coordsFormatted: "27°58′00″N, 88°42′00″E",
+    status: "active",
+    year: "2017",
+    elevation: "4,850 m",
+    description: "Monsoon-fed Eastern Himalayan benchmark glacier monitoring equilibrium line altitudes and trans-boundary cryosphere hydrology.",
+    labelPlacement: "right"
   },
 
   // ── Southern Ocean & Polar Seas ─────────────────────────────────────────────
@@ -245,7 +399,6 @@ export const stations = [
     year: "2016",
     elevation: "0 m (Marine)",
     description: "Southern Ocean Time Series observatory tracking air-sea carbon dioxide flux, biological pump efficiency, and Antarctic Circumpolar Current transport.",
-    datasetCount: 78,
     labelPlacement: "bottom-right"
   },
   {
@@ -260,7 +413,6 @@ export const stations = [
     year: "2018",
     elevation: "0 m (Marine)",
     description: "NCPOR deep CTD hydrographic section monitoring trace metal biogeochemistry and krill ecosystem dynamics in polar front waters.",
-    datasetCount: 45,
     labelPlacement: "top-right"
   }
 ];

@@ -360,10 +360,12 @@ const StationMarker = ({ pos, station, isHovered, isDimmed, onHover, onLeave, is
                      <span className="opacity-50 text-[9px] uppercase font-mono">Established</span>
                      <span className="font-semibold font-mono text-[11px]">{station.year}</span>
                    </div>
-                   <div className="flex flex-col text-right">
-                     <span className="opacity-50 text-[9px] uppercase font-mono">Archive Datasets</span>
-                     <span className="font-semibold font-mono text-[11px] text-[#F2B441]">{station.datasetCount}</span>
-                   </div>
+                   {station.datasetCount ? (
+                     <div className="flex flex-col text-right">
+                       <span className="opacity-50 text-[9px] uppercase font-mono">Archive Datasets</span>
+                       <span className="font-semibold font-mono text-[11px] text-[#F2B441]">{station.datasetCount}</span>
+                     </div>
+                   ) : null}
                 </div>
              </div>
           </Html>

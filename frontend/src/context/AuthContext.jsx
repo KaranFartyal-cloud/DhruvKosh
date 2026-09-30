@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../config/firebase';
 import { authAPI } from '../utils/api';
 
 const AuthContext = createContext();
@@ -53,8 +55,19 @@ export const AuthProvider = ({ children }) => {
     return res.data;
   };
 
+  // Legacy: used by the old @react-oauth/google button (kept for compatibility)
   const googleSignIn = async (credential, redirectTo = '/') => {
     const res = await authAPI.googleLogin(credential);
+    handleAuthSuccess(res.data, redirectTo);
+    return res.data;
+  };
+
+  // Firebase Google Sign-In: opens Google popup via Firebase, then exchanges
+  // the Firebase ID token with the backend for an app JWT.
+  const firebaseGoogleSignIn = async (redirectTo = '/') => {
+    const result = await signInWithPopup(auth, googleProvider);
+    const idToken = await result.user.getIdToken();
+    const res = await authAPI.googleLogin(idToken);
     handleAuthSuccess(res.data, redirectTo);
     return res.data;
   };
@@ -67,7 +80,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, googleSignIn, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, googleSignIn, firebaseGoogleSignIn, logout }}>
       {children}
     </AuthContext.Provider>
   );

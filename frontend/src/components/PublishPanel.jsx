@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import publishAPI from '../api/publish';
+import { useInvalidateLiveStats } from '../hooks/useLiveStats';
 
 const PublishPanel = ({ post, onPublishSuccess }) => {
+  const queryClient = useQueryClient();
+  const invalidateLiveStats = useInvalidateLiveStats();
   const [platforms, setPlatforms] = useState({ configured_platforms: [], publish_mode: 'dry_run' });
   const [selectedPlatforms, setSelectedPlatforms] = useState([]);
   const [scheduleDate, setScheduleDate] = useState('');
@@ -41,6 +45,8 @@ const PublishPanel = ({ post, onPublishSuccess }) => {
         media_id: post.suggested_media_id,
         scheduled_at: scheduleDate ? new Date(scheduleDate).toISOString() : null
       });
+      queryClient.invalidateQueries({ queryKey: ['publishLog'] });
+      invalidateLiveStats();
       setIsModalOpen(false);
       fetchStatus();
       if (onPublishSuccess) onPublishSuccess();

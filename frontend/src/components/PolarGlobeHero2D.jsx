@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Search, ArrowUpRight, Globe, Layers, Mountain } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { stations as STATIONS } from '../data/stations';
+import { useLiveStats } from '../hooks/useLiveStats';
+import verifiedFacts from '../data/facts';
+import LiveIndicator from './LiveIndicator';
 
 const SEARCH_PLACEHOLDERS = [
   "Search the polar archive...",
@@ -32,6 +35,15 @@ const ARCTIC_COASTLINE = [
   [76.5, 16.0], [77.2, 14.5], [78.0, 13.5], [78.9, 11.9], [79.8, 11.5],
   [80.3, 16.0], [80.0, 22.0], [79.2, 25.0], [78.4, 21.5], [77.5, 22.0],
   [76.8, 19.5], [76.5, 16.0]
+];
+
+// Vector Coordinates for Himalayas / Third Pole Cryospheric Arc
+const HIMALAYAS_RIDGE = [
+  [36.0, 74.0], [35.5, 75.5], [35.2, 77.0], [34.0, 77.8], [32.8, 77.3],
+  [32.4, 77.6], [31.5, 78.5], [30.8, 79.2], [29.8, 80.5], [28.8, 83.5],
+  [28.0, 86.5], [27.8, 88.5], [28.2, 90.5], [28.5, 92.5], [29.5, 94.5],
+  [30.0, 95.5], [29.0, 95.0], [27.5, 92.0], [27.0, 88.5], [27.2, 85.0],
+  [28.5, 81.0], [30.0, 78.0], [32.0, 76.5], [34.5, 74.5], [36.0, 74.0]
 ];
 
 function projectOrthographic(latDeg, lonDeg, radius, center, rotationAngle = 0, tiltAngle = 1.35) {
@@ -145,8 +157,79 @@ const AnimatedStat = ({ endValue, label, duration = 1400, delay = 0, isLight }) 
   );
 };
 
+/* ── HeroLiveStat — wraps AnimatedStat with live value and tooltip ──────── */
+const HeroLiveStat = ({ value, label, sourceLabel, duration = 1400, delay = 0, isLight }) => {
+  const [display, setDisplay] = useState(0);
+  const prevRef = useRef(0);
+  const rafRef  = useRef(null);
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    if (value == null || isNaN(value)) return;
+    const from = prevRef.current;
+    const to   = value;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    const startAnim = () => {
+      const start = performance.now();
+      const tick = (now) => {
+        const elapsed  = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased    = 1 - Math.pow(1 - progress, 3);
+        setDisplay(Math.round(from + (to - from) * eased));
+        if (progress < 1) {
+          rafRef.current = requestAnimationFrame(tick);
+        } else {
+          prevRef.current = to;
+          startedRef.current = true;
+        }
+      };
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    if (!startedRef.current && delay > 0) {
+      const t = setTimeout(startAnim, delay);
+      return () => clearTimeout(t);
+    } else {
+      startAnim();
+    }
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [value, duration, delay]);
+
+  const formatted = display >= 1000 ? display.toLocaleString() : display;
+
+  return (
+    <div className="group cursor-default transition-all duration-220" title={sourceLabel} aria-label={sourceLabel}>
+      <div
+        className={`font-mono text-xl sm:text-2xl font-bold tracking-tight transition-colors duration-220 tabular-nums ${
+          isLight
+            ? 'text-[#0B1B33] group-hover:text-[#0A7C8C]'
+            : 'text-[#EAF0F8] group-hover:text-[#7FE7F5]'
+        }`}
+        style={{ fontFeatureSettings: '"tnum"' }}
+      >
+        {value == null
+          ? <span className="inline-block w-12 h-6 rounded bg-white/10 animate-pulse align-middle" />
+          : formatted
+        }
+      </div>
+      <div
+        className={`text-[11px] sm:text-xs uppercase tracking-wider font-medium transition-opacity duration-220 ${
+          isLight
+            ? 'text-[#66758C] opacity-75 group-hover:opacity-100'
+            : 'text-[#8592A6] opacity-70 group-hover:opacity-100'
+        }`}
+      >
+        {label}
+      </div>
+    </div>
+  );
+};
+
 export const PolarGlobeHero = ({ onSearch, className = '' }) => {
   const { isLight } = useTheme();
+  // Live stats from backend — shared with Dashboard and Repository
+  const { data: liveData, isError: statsError, dataUpdatedAt } = useLiveStats();
+  const liveDocuments = liveData?.documents ?? null;
+
   const [polarView, setPolarView] = useState('antarctic'); // 'antarctic' | 'arctic'
   const [searchQuery, setSearchQuery] = useState('');
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
@@ -414,7 +497,11 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
         }
 
         // Concentric Latitude Graticule Projection
-        const latitudes = polarView === 'antarctic' ? [-80, -70, -60, -50] : [80, 70, 60, 50];
+        const latitudes = polarView === 'antarctic' 
+          ? [-80, -70, -60, -50] 
+          : polarView === 'arctic' 
+            ? [80, 70, 60, 50] 
+            : [40, 35, 30, 25];
         latitudes.forEach((latDeg) => {
           ctx.beginPath();
           let firstPoint = true;
@@ -437,7 +524,11 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
         });
 
         /* ── 4. Polar Landmass Contours ── */
-        const activeCoastline = polarView === 'antarctic' ? ANTARCTIC_COASTLINE : ARCTIC_COASTLINE;
+        const activeCoastline = polarView === 'antarctic' 
+          ? ANTARCTIC_COASTLINE 
+          : polarView === 'arctic' 
+            ? ARCTIC_COASTLINE 
+            : HIMALAYAS_RIDGE;
         ctx.beginPath();
         let coastStarted = false;
         activeCoastline.forEach(([lat, lon]) => {
@@ -782,9 +873,38 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
               globeReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             } ${isLight ? 'border-slate-200' : 'border-white/10'}`}
           >
-            <AnimatedStat endValue="48,200" label="Documents" duration={1400} delay={600} isLight={isLight} />
-            <AnimatedStat endValue="312" label="Datasets" duration={1400} delay={700} isLight={isLight} />
-            <AnimatedStat endValue="43" label="Expeditions" duration={1400} delay={800} isLight={isLight} />
+            {/* LIVE from backend — DhruvKosh repository total */}
+            <HeroLiveStat
+              value={liveDocuments}
+              label="Documents"
+              sourceLabel="Live count from the DhruvKosh repository"
+              duration={1400}
+              delay={600}
+              isLight={isLight}
+            />
+            {/* NCPOR verified public record */}
+            <HeroLiveStat
+              value={verifiedFacts.antarcticExpeditions.value}
+              label={verifiedFacts.antarcticExpeditions.shortLabel}
+              sourceLabel={`${verifiedFacts.antarcticExpeditions.note} — Source: NCPOR (ncpor.res.in/news/view/815)`}
+              duration={1400}
+              delay={700}
+              isLight={isLight}
+            />
+            {/* Derived from stations.js active entries */}
+            <HeroLiveStat
+              value={verifiedFacts.activeStations.value}
+              label={verifiedFacts.activeStations.shortLabel}
+              sourceLabel={`${verifiedFacts.activeStations.note} — Source: NCPOR Operational Stations`}
+              duration={1400}
+              delay={800}
+              isLight={isLight}
+            />
+          </div>
+
+          {/* Live status indicator */}
+          <div className="pt-2">
+            <LiveIndicator dataUpdatedAt={dataUpdatedAt} isError={statsError} />
           </div>
 
         </div>

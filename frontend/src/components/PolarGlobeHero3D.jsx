@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense } from 'react';
 import { Search, ArrowUpRight, Globe, Layers, Mountain } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useLiveStats } from '../hooks/useLiveStats';
+import verifiedFacts from '../data/facts';
+import LiveIndicator from './LiveIndicator';
 
 const PolarGlobe3D = React.lazy(() => import('./PolarGlobe3D'));
 
@@ -100,8 +103,79 @@ const AnimatedStat = ({ endValue, label, duration = 1400, delay = 0, isLight }) 
   );
 };
 
+/* ── HeroLiveStat — wraps AnimatedStat with live value and tooltip ──────── */
+const HeroLiveStat = ({ value, label, sourceLabel, duration, delay, isLight }) => {
+  const [display, setDisplay] = useState(0);
+  const prevRef = useRef(0);
+  const rafRef  = useRef(null);
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    if (value == null || isNaN(value)) return;
+    const from = prevRef.current;
+    const to   = value;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    const startAnim = () => {
+      const start = performance.now();
+      const tick = (now) => {
+        const elapsed  = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased    = 1 - Math.pow(1 - progress, 3);
+        setDisplay(Math.round(from + (to - from) * eased));
+        if (progress < 1) {
+          rafRef.current = requestAnimationFrame(tick);
+        } else {
+          prevRef.current = to;
+          startedRef.current = true;
+        }
+      };
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    if (!startedRef.current && delay > 0) {
+      const t = setTimeout(startAnim, delay);
+      return () => clearTimeout(t);
+    } else {
+      startAnim();
+    }
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [value, duration, delay]);
+
+  const formatted = display >= 1000 ? display.toLocaleString() : display;
+
+  return (
+    <div className="group cursor-default transition-all duration-220" title={sourceLabel} aria-label={sourceLabel}>
+      <div
+        className={`font-mono text-xl sm:text-2xl font-bold tracking-tight transition-colors duration-220 tabular-nums ${
+          isLight
+            ? 'text-[#0B1B33] group-hover:text-[#0A7C8C]'
+            : 'text-[#EAF0F8] group-hover:text-[#7FE7F5]'
+        }`}
+        style={{ fontFeatureSettings: '"tnum"' }}
+      >
+        {value == null
+          ? <span className="inline-block w-12 h-6 rounded bg-white/10 animate-pulse align-middle" />
+          : formatted
+        }
+      </div>
+      <div
+        className={`text-[11px] sm:text-xs uppercase tracking-wider font-medium transition-opacity duration-220 ${
+          isLight
+            ? 'text-[#66758C] opacity-75 group-hover:opacity-100'
+            : 'text-[#8592A6] opacity-70 group-hover:opacity-100'
+        }`}
+      >
+        {label}
+      </div>
+    </div>
+  );
+};
+
 export const PolarGlobeHero3D = ({ onSearch, className = '' }) => {
   const { isLight } = useTheme();
+  // Live stats from backend — shared with Dashboard and Repository
+  const { data: liveData, isError: statsError, dataUpdatedAt } = useLiveStats();
+  const liveDocuments = liveData?.documents ?? null;
+
   const [polarView, setPolarView] = useState('antarctic'); // 'antarctic' | 'arctic'
   const [searchQuery, setSearchQuery] = useState('');
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
@@ -306,14 +380,44 @@ export const PolarGlobeHero3D = ({ onSearch, className = '' }) => {
               globeReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             } ${isLight ? 'border-slate-200' : 'border-white/10'}`}
           >
-            <AnimatedStat endValue="48,200" label="Documents" duration={1400} delay={600} isLight={isLight} />
-            <AnimatedStat endValue="312" label="Datasets" duration={1400} delay={700} isLight={isLight} />
-            <AnimatedStat endValue="43" label="Expeditions" duration={1400} delay={800} isLight={isLight} />
+            {/* LIVE from backend — DhruvKosh repository total */}
+            <HeroLiveStat
+              value={liveDocuments}
+              label="Documents"
+              sourceLabel="Live count from the DhruvKosh repository"
+              duration={1400}
+              delay={600}
+              isLight={isLight}
+            />
+            {/* NCPOR verified public record */}
+            <HeroLiveStat
+              value={verifiedFacts.antarcticExpeditions.value}
+              label={verifiedFacts.antarcticExpeditions.shortLabel}
+              sourceLabel={`${verifiedFacts.antarcticExpeditions.note} — Source: NCPOR (ncpor.res.in/news/view/815)`}
+              duration={1400}
+              delay={700}
+              isLight={isLight}
+            />
+            {/* Derived from stations.js active entries */}
+            <HeroLiveStat
+              value={verifiedFacts.activeStations.value}
+              label={verifiedFacts.activeStations.shortLabel}
+              sourceLabel={`${verifiedFacts.activeStations.note} — Source: NCPOR Operational Stations`}
+              duration={1400}
+              delay={800}
+              isLight={isLight}
+            />
+          </div>
+
+          {/* Live status indicator */}
+          <div className="pt-2">
+            <LiveIndicator dataUpdatedAt={dataUpdatedAt} isError={statsError} />
           </div>
 
         </div>
       </div>
     </section>
+
   );
 };
 

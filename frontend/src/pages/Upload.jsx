@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { contentAPI } from '../utils/api';
 import { renderFirstPageToCanvas, extractPDFText, analyzePDFContent } from '../utils/pdfHelper';
+import { useInvalidateLiveStats } from '../hooks/useLiveStats';
 
 /* ─── tiny icon helpers ─────────────────────────────────────────────────── */
 const Icon = ({ path, cls = 'w-5 h-5' }) => (
@@ -110,6 +111,7 @@ const PDFPreviewModal = ({ file, onClose }) => {
 /* ─── Main Upload component ─────────────────────────────────────────────── */
 const Upload = () => {
   const navigate = useNavigate();
+  const invalidateLiveStats = useInvalidateLiveStats();
   const fileInputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -234,6 +236,7 @@ const Upload = () => {
       data.append('category', formData.category);
       data.append('tags', formData.tags);
       const response = await contentAPI.upload(data);
+      invalidateLiveStats();
       setSuccess(true);
       setTimeout(() => navigate(`/content/${response.data.id}`), 2000);
     } catch (err) {

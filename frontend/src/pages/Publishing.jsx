@@ -1,38 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import publishAPI from '../api/publish';
+import { useInvalidateLiveStats } from '../hooks/useLiveStats';
 
 const Publishing = () => {
-  const [logs, setLogs] = useState([]);
-  const [platforms, setPlatforms] = useState({});
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const invalidateLiveStats = useInvalidateLiveStats();
   const [copiedId, setCopiedId] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const { data: logs = [], isLoading: loadingLogs } = useQuery({
+    queryKey: ['publishLog'],
+    queryFn: async () => {
+      const res = await publishAPI.getPublishLog();
+      return res.data?.items || [];
+    },
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 15000,
+    placeholderData: (prev) => prev,
+    retry: 2,
+  });
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [logRes, platRes] = await Promise.all([
-        publishAPI.getPublishLog(),
-        publishAPI.getPlatforms()
-      ]);
-      setLogs(logRes.data.items || []);
-      setPlatforms(platRes.data);
-    } catch (error) {
-      console.error('Failed to fetch publishing data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: platforms = {} } = useQuery({
+    queryKey: ['publishPlatforms'],
+    queryFn: async () => {
+      const res = await publishAPI.getPlatforms();
+      return res.data || {};
+    },
+    staleTime: 60000,
+    placeholderData: (prev) => prev,
+  });
+
+  const loading = loadingLogs && logs.length === 0;
 
   const handleCancel = async (logId) => {
     if (!window.confirm('Cancel this scheduled post?')) return;
     try {
       await publishAPI.cancelScheduled(logId);
-      fetchData();
+      queryClient.invalidateQueries({ queryKey: ['publishLog'] });
+      invalidateLiveStats();
     } catch (e) {
       console.error(e);
       alert('Failed to cancel');

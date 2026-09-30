@@ -19,8 +19,9 @@ const Auth = React.lazy(() => import('./pages/Auth'));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
-      retry: false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      retry: 2,
     },
   },
 });
