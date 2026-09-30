@@ -250,86 +250,149 @@ const Lines = ({ isLight, vertices, lightColor, darkColor, lightOpacity, darkOpa
 const StationMarker = ({ pos, station, isHovered, isDimmed, onHover, onLeave, isLight }) => {
   const ref = useRef();
   const ringRef = useRef();
+  const [isVisible, setIsVisible] = useState(true);
   
   useFrame(({ camera, clock }) => {
      const camDir = camera.position.clone().normalize();
      const dot = camDir.dot(pos.clone().normalize());
-     const isVisible = dot > -0.05; 
+     const visible = dot > 0.12; 
      
-     if (ref.current) ref.current.visible = isVisible;
+     if (visible !== isVisible) {
+       setIsVisible(visible);
+     }
      
-     if (ringRef.current && isVisible) {
+     if (ref.current) ref.current.visible = visible;
+     
+     if (ringRef.current && visible) {
         const t = clock.elapsedTime;
         if (station.status === 'active') {
-           const phase = (t * 0.3 + pos.x) % 1.0;
+           const phase = (t * 0.35 + Math.abs(pos.x * 2.0)) % 1.0;
            const s = 1.0 + phase * 1.5;
            ringRef.current.scale.set(s, s, s);
            ringRef.current.material.opacity = (1.0 - phase) * 0.8;
         } else if (station.status === 'planned') {
-           const phase = (t * 0.1 + pos.x) % 1.0;
-           const s = 1.0 + phase * 0.5;
+           const phase = (t * 0.15 + Math.abs(pos.x * 2.0)) % 1.0;
+           const s = 1.0 + phase * 0.6;
            ringRef.current.scale.set(s, s, s);
            ringRef.current.material.opacity = (1.0 - phase) * 0.5;
         } else {
            ringRef.current.scale.set(1, 1, 1);
-           ringRef.current.material.opacity = 0.4;
+           ringRef.current.material.opacity = 0.3;
         }
      }
   });
   
-  const color = station.status === 'active' ? '#F2B441' : (station.status === 'planned' ? '#7FE7F5' : '#8592A6');
+  const color = station.status === 'active' 
+    ? '#F2B441' 
+    : (station.status === 'planned' ? '#7FE7F5' : '#94A3B8');
+
+  // Compute offset classes to prevent word mixing / collisions
+  const labelPlacement = station.labelPlacement || 'bottom';
+  const getOffsetClass = () => {
+    switch (labelPlacement) {
+      case 'top-right':
+        return 'translate-x-3 -translate-y-6';
+      case 'top-left':
+        return '-translate-x-full -translate-y-6 -ml-2';
+      case 'bottom-right':
+        return 'translate-x-3 translate-y-3';
+      case 'bottom-left':
+        return '-translate-x-full translate-y-3 -ml-2';
+      case 'right':
+        return 'translate-x-3 -translate-y-1/2';
+      case 'left':
+        return '-translate-x-full -translate-y-1/2 -ml-3';
+      case 'top':
+        return '-translate-x-1/2 -translate-y-8';
+      case 'bottom':
+      default:
+        return '-translate-x-1/2 translate-y-3';
+    }
+  };
   
   return (
     <group position={pos} ref={ref} onPointerOver={(e) => { e.stopPropagation(); onHover(); }} onPointerOut={onLeave}>
        {station.status !== 'decommissioned' ? (
          <mesh>
-           <sphereGeometry args={[0.015, 16, 16]} />
-           <meshBasicMaterial color={color} transparent opacity={isDimmed ? 0.2 : 0.9} />
+           <sphereGeometry args={[0.016, 16, 16]} />
+           <meshBasicMaterial color={color} transparent opacity={isDimmed ? 0.25 : 0.95} />
          </mesh>
        ) : (
          <mesh>
-           <ringGeometry args={[0.010, 0.015, 16]} />
-           <meshBasicMaterial color={color} transparent opacity={isDimmed ? 0.2 : 0.6} />
+           <ringGeometry args={[0.010, 0.016, 16]} />
+           <meshBasicMaterial color={color} transparent opacity={isDimmed ? 0.25 : 0.75} />
          </mesh>
        )}
        
        <mesh ref={ringRef}>
-         <ringGeometry args={[0.018, 0.022, 24]} />
+         <ringGeometry args={[0.018, 0.024, 24]} />
          <meshBasicMaterial color={color} transparent depthWrite={false} />
        </mesh>
        
-       {isHovered && (
-          <Html center distanceFactor={1.5} zIndexRange={[100, 0]} className="pointer-events-none">
-             <div className={`p-4 rounded-xl border backdrop-blur-md shadow-2xl min-w-[240px] transition-colors duration-300 ${
-                pos.x > 0 ? 'ml-[-260px]' : 'ml-[260px]'
+       {isHovered && isVisible && (
+          <Html center distanceFactor={1.5} zIndexRange={[200, 0]} className="pointer-events-none">
+             <div className={`p-4 rounded-xl border backdrop-blur-md shadow-2xl min-w-[260px] transition-all duration-200 ${
+                pos.x > 0 ? 'ml-[-280px]' : 'ml-[280px]'
              } ${
-                isLight ? 'bg-white/90 border-slate-200 text-[#0B1B33]' : 'bg-[#0D1422]/90 border-white/10 text-[#EAF0F8]'
+                isLight ? 'bg-white/95 border-slate-200 text-[#0B1B33]' : 'bg-[#0D1422]/95 border-white/15 text-[#EAF0F8]'
              }`}>
                 <div className="flex justify-between items-start mb-2">
                    <div>
-                     <h4 className="font-semibold text-sm">{station.name}</h4>
-                     <p className="text-xs opacity-70">{station.place}</p>
+                     <h4 className="font-semibold text-sm font-display tracking-tight">{station.name}</h4>
+                     <p className="text-xs opacity-75">{station.place}</p>
                    </div>
-                   <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium border ${
-                      station.status === 'active' ? 'bg-[#F2B441]/10 text-[#F2B441] border-[#F2B441]/30' :
-                      station.status === 'planned' ? 'bg-[#7FE7F5]/10 text-[#7FE7F5] border-[#7FE7F5]/30' :
-                      'bg-slate-500/10 text-slate-400 border-slate-500/30'
-                   }`}>{station.status.charAt(0).toUpperCase() + station.status.slice(1)}</span>
+                   <span className={`text-[9px] px-2 py-0.5 rounded font-mono font-medium border uppercase tracking-wider ${
+                      station.status === 'active' ? 'bg-[#F2B441]/15 text-[#F2B441] border-[#F2B441]/35' :
+                      station.status === 'planned' ? 'bg-[#7FE7F5]/15 text-[#7FE7F5] border-[#7FE7F5]/35' :
+                      'bg-slate-500/15 text-slate-400 border-slate-500/30'
+                   }`}>{station.status}</span>
                 </div>
-                <div className="font-mono text-[10px] opacity-60 mb-3">
-                   {Math.abs(station.lat).toFixed(4)}°{station.lat < 0 ? 'S':'N'}, {Math.abs(station.lon).toFixed(4)}°{station.lon < 0 ? 'W':'E'}
+                
+                <p className="text-[11px] opacity-80 leading-relaxed mb-3">{station.description}</p>
+                
+                <div className="font-mono text-[10px] text-[#7FE7F5] bg-[#7FE7F5]/10 px-2 py-1 rounded border border-[#7FE7F5]/20 mb-3">
+                   {station.coordsFormatted || `${Math.abs(station.lat).toFixed(4)}°${station.lat < 0 ? 'S':'N'}, ${Math.abs(station.lon).toFixed(4)}°${station.lon < 0 ? 'W':'E'}`}
+                   {station.elevation && ` • Elev. ${station.elevation}`}
                 </div>
-                <div className="flex justify-between text-xs pt-3 border-t border-current border-opacity-10">
-                   <div className="flex flex-col"><span className="opacity-50 text-[9px] uppercase">Established</span><span>{station.year}</span></div>
-                   <div className="flex flex-col text-right"><span className="opacity-50 text-[9px] uppercase">Datasets</span><span>{station.datasetCount}</span></div>
+
+                <div className="flex justify-between text-xs pt-2.5 border-t border-white/10">
+                   <div className="flex flex-col">
+                     <span className="opacity-50 text-[9px] uppercase font-mono">Established</span>
+                     <span className="font-semibold font-mono text-[11px]">{station.year}</span>
+                   </div>
+                   <div className="flex flex-col text-right">
+                     <span className="opacity-50 text-[9px] uppercase font-mono">Archive Datasets</span>
+                     <span className="font-semibold font-mono text-[11px] text-[#F2B441]">{station.datasetCount}</span>
+                   </div>
                 </div>
              </div>
           </Html>
        )}
-       {!isHovered && (
-         <Html center className="pointer-events-none transition-opacity duration-300" style={{ opacity: isDimmed ? 0.2 : 0.8 }}>
-            <div className={`whitespace-nowrap font-mono text-[9px] mt-6 ${isLight ? 'text-[#0B1B33]' : 'text-white'}`}>
-               {station.name}
+       
+       {!isHovered && isVisible && (
+         <Html 
+           center={false} 
+           distanceFactor={1.7}
+           className="pointer-events-auto cursor-pointer"
+           style={{ 
+             opacity: isDimmed ? 0.25 : 0.95,
+             transition: 'opacity 0.2s ease, transform 0.2s ease'
+           }}
+         >
+            <div 
+              onClick={(e) => { e.stopPropagation(); onHover(); }}
+              onMouseEnter={onHover}
+              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border shadow-lg backdrop-blur-md whitespace-nowrap text-[9.5px] font-mono tracking-wider uppercase transform transition-all duration-150 ${getOffsetClass()} ${
+                isLight 
+                  ? 'bg-white/95 border-slate-300 text-[#0B1B33] hover:border-[#0A7C8C] hover:scale-105' 
+                  : 'bg-[#05080F]/90 border-white/20 text-[#EAF0F8] hover:border-[#7FE7F5] hover:bg-[#0D1422] hover:scale-105'
+              }`}
+            >
+               <span 
+                 className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                 style={{ backgroundColor: color }}
+               />
+               <span className="font-semibold">{station.name}</span>
             </div>
          </Html>
        )}
@@ -339,7 +402,13 @@ const StationMarker = ({ pos, station, isHovered, isDimmed, onHover, onLeave, is
 
 const ViewController = ({ polarView }) => {
   const { camera, controls } = useThree();
-  const targetPolar = polarView === 'antarctic' ? Math.PI * 0.85 : Math.PI * 0.15;
+  const targetPolar = polarView === 'antarctic' 
+    ? Math.PI * 0.82 
+    : polarView === 'arctic' 
+      ? Math.PI * 0.18 
+      : polarView === 'himalayas'
+        ? Math.PI * 0.42
+        : Math.PI * 0.55;
   
   useFrame((state, delta) => {
     if (controls) {
@@ -371,10 +440,6 @@ const ParallaxGroup = ({ children }) => {
 export default function PolarGlobe3D({ polarView }) {
   const { isLight } = useTheme();
   const [activeStation, setActiveStation] = useState(null);
-
-  useEffect(() => {
-    console.log(`Land points: ${landPoints.length / 3}, Ice points: ${icePoints.length / 3}`);
-  }, []);
 
   return (
     <Canvas 
@@ -415,7 +480,7 @@ export default function PolarGlobe3D({ polarView }) {
         minPolarAngle={Math.PI * 0.1}
         maxPolarAngle={Math.PI * 0.9}
         autoRotate
-        autoRotateSpeed={0.5}
+        autoRotateSpeed={0.4}
         enableDamping
         dampingFactor={0.05}
         makeDefault

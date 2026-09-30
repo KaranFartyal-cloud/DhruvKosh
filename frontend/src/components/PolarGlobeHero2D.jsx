@@ -1,58 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, ArrowUpRight, Globe, Layers } from 'lucide-react';
+import { Search, ArrowUpRight, Globe, Layers, Mountain } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-
-/* ==========================================================================
-   POLAR GLOBE HERO CONFIGURATION & RESEARCH STATIONS
-   ========================================================================== */
-
-const STATIONS = [
-  {
-    id: 'maitri',
-    name: 'Maitri Station',
-    region: 'Antarctica',
-    lat: -70.7658,
-    lon: 11.7358,
-    coordsFormatted: "70°45′57″S, 11°44′09″E",
-    locationDesc: 'Schirmacher Oasis, Queen Maud Land',
-    docs: '18,420',
-    datasets: '86',
-    status: 'Operational Year-Round',
-    established: '1989',
-    elevation: '117 m',
-    color: '#F2B441', // Amber exclusively for station beacon
-  },
-  {
-    id: 'bharati',
-    name: 'Bharati Station',
-    region: 'Antarctica',
-    lat: -69.4078,
-    lon: 76.1872,
-    coordsFormatted: "69°24′28″S, 76°11′14″E",
-    locationDesc: 'Larsemann Hills, East Antarctica',
-    docs: '22,150',
-    datasets: '142',
-    status: 'Advanced Research Hub',
-    established: '2012',
-    elevation: '35 m',
-    color: '#F2B441', // Amber exclusively for station beacon
-  },
-  {
-    id: 'himadri',
-    name: 'Himadri Station',
-    region: 'Arctic',
-    lat: 78.9233,
-    lon: 11.9312,
-    coordsFormatted: "78°55′24″N, 11°55′52″E",
-    locationDesc: 'Ny-Ålesund, Spitsbergen, Svalbard',
-    docs: '7,630',
-    datasets: '84',
-    status: 'International Arctic Base',
-    established: '2008',
-    elevation: '15 m',
-    color: '#F2B441', // Amber exclusively for station beacon
-  },
-];
+import { stations as STATIONS } from '../data/stations';
 
 const SEARCH_PLACEHOLDERS = [
   "Search the polar archive...",
@@ -229,7 +178,7 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
   });
 
   useEffect(() => {
-    motionState.current.targetTiltBase = polarView === 'antarctic' ? 1.35 : -1.35;
+    motionState.current.targetTiltBase = polarView === 'antarctic' ? 1.35 : polarView === 'arctic' ? -1.35 : 0.45;
   }, [polarView]);
 
   useEffect(() => {
@@ -530,7 +479,11 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
 
         /* ── 6. Glowing Amber Station Markers (Filtered by active polar realm) ── */
         const visibleStations = STATIONS.filter((s) =>
-          polarView === 'antarctic' ? s.region === 'Antarctica' : s.region === 'Arctic'
+          polarView === 'antarctic' 
+            ? s.region === 'Antarctica' || s.region === 'Southern Ocean'
+            : polarView === 'arctic'
+              ? s.region === 'Arctic'
+              : s.region === 'Himalayas'
         );
 
         visibleStations.forEach((station) => {
@@ -550,27 +503,25 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
 
             ctx.beginPath();
             ctx.arc(pt.x, pt.y, ringRadius, 0, Math.PI * 2);
-            ctx.strokeStyle = '#F2B441';
+            ctx.strokeStyle = station.status === 'planned' ? '#7FE7F5' : '#F2B441';
             ctx.lineWidth = 1.4;
             ctx.globalAlpha = isDimmed ? 0.2 : ringAlpha;
             ctx.stroke();
 
-            // Station Halo using pre-rendered sprite
-            ctx.drawImage(markerSprite, pt.x - 20, pt.y - 20);
-
-            // Solid Amber Core
+            // Solid Amber / Cyan Core
             ctx.beginPath();
             ctx.arc(pt.x, pt.y, isHovered ? 5 : 4, 0, Math.PI * 2);
-            ctx.fillStyle = '#F2B441';
+            ctx.fillStyle = station.status === 'planned' ? '#7FE7F5' : '#F2B441';
             ctx.globalAlpha = isDimmed ? 0.4 : 1;
             ctx.fill();
 
-            // Leader Line & Anti-Clipping Flip
-            // If marker is close to the right edge (pt.x > width - 180), flip label to left!
-            const flipToLeft = pt.x > width - 180 || (pt.x > center.x + radius * 0.4);
+            // Leader Line & Anti-Clipping / Directional Offset
+            const placement = station.labelPlacement || 'right';
+            const flipToLeft = placement.includes('left') || pt.x > width - 180 || (pt.x > center.x + radius * 0.4);
             const lineDir = flipToLeft ? -1 : 1;
-            const lineEndX = pt.x + lineDir * 38;
-            const lineEndY = pt.y - 22;
+            const isTop = placement.includes('top');
+            const lineEndX = pt.x + lineDir * 42;
+            const lineEndY = pt.y + (isTop ? -22 : 22);
 
             ctx.beginPath();
             ctx.moveTo(pt.x, pt.y);
@@ -590,7 +541,7 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
             // Coordinates
             ctx.font = '400 9px monospace';
             ctx.fillStyle = isLight ? '#66758C' : '#8592A6';
-            ctx.fillText(station.coordsFormatted, lineEndX + (flipToLeft ? -5 : 5), lineEndY + 9);
+            ctx.fillText(station.coordsFormatted || `${Math.abs(station.lat).toFixed(2)}°, ${Math.abs(station.lon).toFixed(2)}°`, lineEndX + (flipToLeft ? -5 : 5), lineEndY + 9);
 
             ctx.restore();
           }
@@ -689,8 +640,8 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
           title="Drag to rotate globe. Hover station markers to inspect."
         />
 
-        {/* Antarctic / Arctic View Realm Toggle (Positioned under the globe) */}
-        <div className="absolute bottom-6 right-6 sm:bottom-10 sm:right-12 z-40 flex items-center gap-1.5 p-1 rounded-full border border-white/10 bg-[#0D1422]/95 shadow-sm">
+        {/* Polar Realms: Antarctica, Arctic, Himalayas (Third Pole) */}
+        <div className="absolute bottom-6 right-6 sm:bottom-10 sm:right-12 z-40 flex items-center gap-1.5 p-1 rounded-full border border-white/10 bg-[#0D1422]/95 backdrop-blur-md shadow-xl">
           <button
             onClick={() => setPolarView('antarctic')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
@@ -702,7 +653,7 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
             }`}
           >
             <Globe className="w-3.5 h-3.5" />
-            <span>Antarctica (Maitri & Bharati)</span>
+            <span>Antarctica</span>
           </button>
 
           <button
@@ -716,7 +667,21 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>Arctic (Himadri)</span>
+            <span>Arctic</span>
+          </button>
+
+          <button
+            onClick={() => setPolarView('himalayas')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
+              polarView === 'himalayas'
+                ? isLight
+                  ? 'bg-white text-[#0A7C8C] shadow-sm font-semibold'
+                  : 'bg-[#7FE7F5]/20 text-[#7FE7F5] border border-[#7FE7F5]/30 shadow-sm font-semibold'
+                : 'text-[#8592A6] hover:text-[#EAF0F8]'
+            }`}
+          >
+            <Mountain className="w-3.5 h-3.5" />
+            <span>Himalayas (Himansh)</span>
           </button>
         </div>
       </div>
