@@ -32,13 +32,17 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const handleAuthSuccess = (data, redirectTo = '/') => {
+    console.log('Auth success data:', data);
     if (data.access_token) {
       localStorage.setItem('auth_token', data.access_token);
+      console.log('Token saved to localStorage');
     }
     if (data.user) {
       localStorage.setItem('user', JSON.stringify(data.user));
       setUser(data.user);
+      console.log('User saved:', data.user);
     }
+    console.log('Navigating to:', redirectTo);
     navigate(redirectTo, { replace: true });
   };
 

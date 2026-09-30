@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { auth, googleProvider } from '../config/firebase';
+import { signInWithPopup } from 'firebase/auth';
 import dhruvLogo from '../assets/dhruv_logo.png';
 import { Eye, EyeOff, CheckCircle2 } from 'lucide-react';
-
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+import Threads from '../components/Threads';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -113,15 +113,27 @@ const Auth = () => {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse) => {
+  const handleGoogleSignIn = async () => {
     setLoading(true);
     setError(null);
     try {
-      // AuthContext.googleSignIn() saves token + user and navigates to '/'
-      await googleSignIn(credentialResponse.credential);
+      console.log('Starting Google sign-in...');
+      // Sign in with Firebase Google
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      console.log('Firebase sign-in successful:', user.email);
+
+      // Get ID token from Firebase
+      const idToken = await user.getIdToken();
+      console.log('Got ID token from Firebase');
+
+      // Send to backend
+      console.log('Sending to backend...');
+      await googleSignIn(idToken);
+      console.log('Backend auth successful');
     } catch (err) {
-      console.error('Google Auth backend error:', err);
-      const msg = err.response?.data?.detail || 'Google sign-in failed. Is the backend running?';
+      console.error('Google Auth error:', err);
+      const msg = err.response?.data?.detail || err.message || 'Google sign-in failed. Please try again.';
       triggerError(msg);
       setLoading(false);
     }
@@ -132,16 +144,15 @@ const Auth = () => {
 
       {/* Brand Panel */}
       <div className="md:w-[52%] w-full bg-gradient-to-br from-[#05080F] to-[#0D1422] relative overflow-hidden flex flex-col justify-between p-8 md:p-12 animate-fade-in md:min-h-screen">
-        <div className="absolute inset-0 pointer-events-none opacity-40 mix-blend-screen">
-          <svg className="w-full h-full animate-spin-slow-brand origin-center" viewBox="0 0 1000 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="500" cy="500" r="400" stroke="#7FE7F5" strokeWidth="0.5" strokeDasharray="4 8" className="animate-pulse-slow" />
-            <circle cx="500" cy="500" r="300" stroke="#7FE7F5" strokeWidth="0.5" strokeOpacity="0.5" />
-            <circle cx="500" cy="500" r="200" stroke="#7FE7F5" strokeWidth="0.5" strokeOpacity="0.2" />
-            <path d="M500 100 L500 900 M100 500 L900 500 M217 217 L783 783 M217 783 L783 217" stroke="#7FE7F5" strokeWidth="0.5" strokeOpacity="0.1" />
-            <circle cx="450" cy="350" r="4" fill="#F5A623" className="animate-pulse-fast" />
-            <circle cx="550" cy="650" r="4" fill="#F5A623" className="animate-pulse-fast" style={{animationDelay: '1s'}} />
-            <circle cx="650" cy="450" r="4" fill="#F5A623" className="animate-pulse-fast" style={{animationDelay: '2s'}} />
-          </svg>
+
+        {/* Threads Animation */}
+        <div className="absolute inset-0 pointer-events-none opacity-20">
+          <Threads
+            color={[0.5, 0.9, 0.96]}
+            amplitude={0.3}
+            distance={0.2}
+            enableMouseInteraction={true}
+          />
         </div>
         
         <div className="relative z-10">
@@ -179,23 +190,24 @@ const Auth = () => {
           </div>
 
                       <div className="relative group w-full mb-6 flex justify-center">
-               {!GOOGLE_CLIENT_ID && (
-                 <div className="absolute inset-0 z-20" title="Google sign-in is not configured"></div>
-               )}
-               <div className={`w-full flex justify-center ${!GOOGLE_CLIENT_ID ? "opacity-50 pointer-events-none" : ""}`}>
-                 <GoogleLogin
-                   onSuccess={handleGoogleSuccess}
-                   onError={() => {
-                     console.error("Google Login Error: Popup closed or failed");
-                     triggerError("Google login popup closed or failed");
-                   }}
-                   useOneTap={false}
-                   shape="rectangular"
-                   theme={isLight ? 'outline' : 'filled_black'}
-                   text="continue_with"
-                   width={400}
-                 />
-               </div>
+               <button
+                 type="button"
+                 onClick={() => {
+                   alert('Google button clicked!');
+                   console.log('Google button clicked!');
+                   handleGoogleSignIn();
+                 }}
+                 disabled={loading}
+                 className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 font-medium py-3 rounded-lg hover:bg-gray-50 transition-all active:scale-[0.98] border border-gray-300 shadow-sm"
+               >
+                 <svg className="w-5 h-5" viewBox="0 0 24 24">
+                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                 </svg>
+                 <span>{loading ? 'Signing in...' : 'Continue with Google'}</span>
+               </button>
             </div>
           
           <div className="flex items-center gap-3 my-6">
