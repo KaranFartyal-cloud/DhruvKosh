@@ -166,9 +166,7 @@ const Threads = ({ color = [1, 1, 1], amplitude = 1, distance = 0, enableMouseIn
     // enough that the downscale is imperceptible.
     const MAX_RENDER_DIM = 1920;
     function resize() {
-      if (!container) return;
       const { clientWidth, clientHeight } = container;
-      if (clientWidth === 0 || clientHeight === 0) return;
       const baseDpr = Math.min(window.devicePixelRatio || 1, 2);
       const longestSide = Math.max(clientWidth, clientHeight) * baseDpr;
       const dpr = longestSide > MAX_RENDER_DIM ? (baseDpr * MAX_RENDER_DIM) / longestSide : baseDpr;
@@ -188,7 +186,6 @@ const Threads = ({ color = [1, 1, 1], amplitude = 1, distance = 0, enableMouseIn
     let targetMouse = [0.5, 0.5];
 
     function handleMouseMove(e) {
-      if (!container) return;
       const rect = container.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width;
       const y = 1.0 - (e.clientY - rect.top) / rect.height;
@@ -205,9 +202,7 @@ const Threads = ({ color = [1, 1, 1], amplitude = 1, distance = 0, enableMouseIn
     let isVisible = true;
     const intersectionObserver = new IntersectionObserver(
       entries => {
-        if (entries && entries[0]) {
-          isVisible = entries[0].isIntersecting;
-        }
+        isVisible = entries[0].isIntersecting;
       },
       { threshold: 0 }
     );

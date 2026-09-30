@@ -63,10 +63,22 @@ class ThreadsPublisher(BasePublisher):
                     
                 media_id = publish_data.get("id")
                 
+                # Step 3: Fetch the real permalink from Threads Graph API
+                real_url = None
+                try:
+                    permalink_res = await client.get(
+                        f"https://graph.threads.net/{self.api_version}/{media_id}",
+                        params={"fields": "permalink", "access_token": self.access_token}
+                    )
+                    permalink_data = permalink_res.json()
+                    real_url = permalink_data.get("permalink")
+                except Exception:
+                    pass  # Fallback: no link rather than broken link
+                
                 return PublishResult(
                     success=True, 
                     external_id=media_id,
-                    url=f"https://www.threads.net/post/{media_id}"
+                    url=real_url
                 )
                 
         except Exception as e:

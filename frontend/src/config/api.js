@@ -50,6 +50,7 @@ export const API_CONFIG = {
     // Auth
     login:    '/api/auth/login',
     register: '/api/auth/register',
+    google:   '/api/auth/google',
   }
 };
 

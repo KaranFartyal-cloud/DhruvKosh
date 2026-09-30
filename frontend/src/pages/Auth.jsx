@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { auth, googleProvider } from '../config/firebase';
+import { signInWithPopup } from 'firebase/auth';
 import dhruvLogo from '../assets/dhruv_logo.png';
 import { Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import Threads from '../components/Threads';
@@ -9,7 +11,7 @@ import Threads from '../components/Threads';
 const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, signup, googleSignIn, firebaseGoogleSignIn } = useAuth();
+  const { login, signup, googleSignIn } = useAuth();
   const { isLight } = useTheme();
   
   const isSignupRoute = location.pathname === '/signup';
@@ -111,23 +113,28 @@ const Auth = () => {
     }
   };
 
-  const handleFirebaseGoogleSignIn = async () => {
+  const handleGoogleSignIn = async () => {
     setLoading(true);
     setError(null);
     try {
-      await firebaseGoogleSignIn();
-      // On success, AuthContext navigates to '/' automatically
+      console.log('Starting Google sign-in...');
+      // Sign in with Firebase Google
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      console.log('Firebase sign-in successful:', user.email);
+
+      // Get ID token from Firebase
+      const idToken = await user.getIdToken();
+      console.log('Got ID token from Firebase');
+
+      // Send to backend
+      console.log('Sending to backend...');
+      await googleSignIn(idToken);
+      console.log('Backend auth successful');
     } catch (err) {
-      console.error('Firebase Google Auth error:', err);
-      // Handle common Firebase popup errors gracefully
-      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-        triggerError('Sign-in cancelled. Please try again.');
-      } else if (err.code === 'auth/popup-blocked') {
-        triggerError('Popup was blocked by your browser. Please allow popups for this site.');
-      } else {
-        const msg = err.response?.data?.detail || err.message || 'Google sign-in failed.';
-        triggerError(msg);
-      }
+      console.error('Google Auth error:', err);
+      const msg = err.response?.data?.detail || err.message || 'Google sign-in failed. Please try again.';
+      triggerError(msg);
       setLoading(false);
     }
   };
@@ -136,52 +143,39 @@ const Auth = () => {
     <div className="min-h-screen w-full flex flex-col md:flex-row bg-ncpor-bg text-ncpor-primary font-sans">
 
       {/* Brand Panel */}
-      <div className={`md:w-[52%] w-full relative overflow-hidden flex flex-col justify-between p-8 md:p-12 animate-fade-in md:min-h-screen transition-colors duration-500 ${
-        isLight
-          ? 'bg-gradient-to-br from-[#EEF4FB] via-[#E2EDF8] to-[#D5E3F2] text-[#0B1B33]'
-          : 'bg-gradient-to-br from-[#05080F] via-[#09101C] to-[#0D1422] text-white'
-      }`}>
-        {/* Dynamic React Bits <Threads /> Interactive Background */}
-        <div className="absolute inset-0 z-0 pointer-events-auto opacity-75">
+      <div className="md:w-[52%] w-full bg-gradient-to-br from-[#05080F] to-[#0D1422] relative overflow-hidden flex flex-col justify-between p-8 md:p-12 animate-fade-in md:min-h-screen">
+
+        {/* Threads Animation */}
+        <div className="absolute inset-0 pointer-events-none opacity-20">
           <Threads
-            color={isLight ? [0.04, 0.49, 0.55] : [0.50, 0.91, 0.96]}
-            amplitude={1.2}
-            distance={0.12}
+            color={[0.5, 0.9, 0.96]}
+            amplitude={0.3}
+            distance={0.2}
             enableMouseInteraction={true}
           />
         </div>
-
-        {/* Ambient Polar Mist / Radial Vignette */}
-        <div
-          className="absolute inset-0 pointer-events-none z-[1]"
-          style={{
-            background: isLight
-              ? 'radial-gradient(circle at 30% 20%, rgba(10, 124, 140, 0.06) 0%, rgba(255, 255, 255, 0.35) 70%, transparent 100%)'
-              : 'radial-gradient(circle at 30% 20%, rgba(127, 231, 245, 0.08) 0%, rgba(5, 8, 15, 0.5) 70%, transparent 100%)',
-          }}
-        />
-
+        
         <div className="relative z-10">
-          <Link to="/" className="flex items-center gap-3 mb-8 w-fit group">
-            <img src={dhruvLogo} alt="DhruvKosh" className="w-12 h-12 transition-transform duration-300 group-hover:scale-105" />
+          <Link to="/" className="flex items-center gap-3 mb-8 w-fit">
+            <img src={dhruvLogo} alt="DhruvKosh" className="w-12 h-12" />
             <div>
-              <h1 className={`text-2xl font-display font-bold tracking-wider ${isLight ? 'text-[#0B1B33]' : 'text-white'}`}>DhruvKosh</h1>
-              <p className={`text-[10px] tracking-widest uppercase font-semibold ${isLight ? 'text-[#0A7C8C]' : 'text-[#7FE7F5]'}`}>NCPOR</p>
+              <h1 className="text-2xl font-display font-bold text-white tracking-wider">DhruvKosh</h1>
+              <p className="text-[10px] text-[#7FE7F5] tracking-widest uppercase">NCPOR</p>
             </div>
           </Link>
           <div className="hidden md:block mt-20">
-            <h2 className={`text-4xl lg:text-5xl font-display font-medium mb-4 leading-tight overflow-hidden ${isLight ? 'text-[#0B1B33]' : 'text-white'}`}>
+            <h2 className="text-4xl lg:text-5xl font-display font-medium text-white mb-4 leading-tight overflow-hidden">
               <span className="block animate-slide-up-mask stagger-1">Every station.</span>
-              <span className={`block animate-slide-up-mask stagger-2 ${isLight ? 'text-[#0A7C8C]' : 'text-[#7FE7F5]'}`}>Every record.</span>
+              <span className="block animate-slide-up-mask stagger-2 text-[#7FE7F5]">Every record.</span>
             </h2>
-            <p className={`max-w-md animate-fade-in stagger-3 text-sm md:text-base leading-relaxed ${isLight ? 'text-[#4A5D73]' : 'text-gray-400'}`}>
+            <p className="text-gray-400 max-w-md animate-fade-in stagger-3">
               Sign in to the National Polar & Ocean Research Knowledge Platform.
             </p>
           </div>
         </div>
 
-        <div className={`relative z-10 hidden md:block text-xs font-mono animate-fade-in stagger-4 ${isLight ? 'text-[#66758C]' : 'text-gray-500'}`}>
-          NCPOR • Ministry of Earth Sciences, Govt. of India
+        <div className="relative z-10 hidden md:block text-xs text-gray-500 animate-fade-in stagger-4">
+          NCPOR, Ministry of Earth Sciences, Govt. of India
         </div>
       </div>
 
@@ -195,29 +189,26 @@ const Auth = () => {
             <button type="button" onClick={() => handleTabSwitch(false)} className={`relative z-10 flex-1 py-2 text-sm font-medium transition-colors ${!isLogin ? 'text-ncpor-primary' : 'text-ncpor-muted hover:text-ncpor-secondary'}`}>Register</button>
           </div>
 
-                      {/* Firebase Google Sign-In Button */}
-              <button
-                type="button"
-                onClick={handleFirebaseGoogleSignIn}
-                disabled={loading}
-                className={`w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-lg border font-medium text-sm transition-all duration-200 active:scale-[0.98] mb-6 ${
-                  isLight
-                    ? 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm'
-                    : 'bg-ncpor-elevated border-ncpor-divider text-ncpor-primary hover:bg-ncpor-surface'
-                } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
-              >
-                {loading ? (
-                  <div className="w-5 h-5 border-2 border-ncpor-accent/30 border-t-ncpor-accent rounded-full animate-spin" />
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-                    <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
-                    <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-                    <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-                  </svg>
-                )}
-                <span>Continue with Google</span>
-              </button>
+                      <div className="relative group w-full mb-6 flex justify-center">
+               <button
+                 type="button"
+                 onClick={() => {
+                   alert('Google button clicked!');
+                   console.log('Google button clicked!');
+                   handleGoogleSignIn();
+                 }}
+                 disabled={loading}
+                 className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 font-medium py-3 rounded-lg hover:bg-gray-50 transition-all active:scale-[0.98] border border-gray-300 shadow-sm"
+               >
+                 <svg className="w-5 h-5" viewBox="0 0 24 24">
+                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                 </svg>
+                 <span>{loading ? 'Signing in...' : 'Continue with Google'}</span>
+               </button>
+            </div>
           
           <div className="flex items-center gap-3 my-6">
             <div className="flex-1 h-px bg-ncpor-divider" />

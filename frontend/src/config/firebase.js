@@ -1,9 +1,7 @@
-// Firebase SDK imports
 import { initializeApp } from "firebase/app";
-import { getAnalytics, isSupported } from "firebase/analytics";
+import { getAnalytics } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAUgUxrZq8IIR2FHFv-ShoXT67BOwvIOkY",
   authDomain: "dhruvkosh.firebaseapp.com",
@@ -14,21 +12,10 @@ const firebaseConfig = {
   measurementId: "G-0SF1SQJVDR"
 };
 
-// Initialize Firebase app (singleton)
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// Firebase Auth + Google provider
+const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({ prompt: "select_account" });
 
-// Analytics — only in browser environments (not SSR / ad-blocked environments)
-let analytics = null;
-isSupported().then((supported) => {
-  if (supported) {
-    analytics = getAnalytics(app);
-  }
-});
-
-export { app, auth, googleProvider, analytics };
-export default app;
+export { app, analytics, auth, googleProvider };

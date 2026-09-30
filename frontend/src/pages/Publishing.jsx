@@ -56,79 +56,87 @@ const Publishing = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'success': return 'bg-green-100 text-green-800 border-green-300';
-      case 'failed': return 'bg-red-100 text-red-800 border-red-300';
-      case 'scheduled': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'dry_run': return 'bg-gray-100 text-gray-800 border-gray-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+      case 'success': return 'bg-green-500/10 text-green-400 border-green-500/30';
+      case 'failed': return 'bg-red-500/10 text-red-400 border-red-500/30';
+      case 'scheduled': return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
+      case 'dry_run': return 'bg-ncpor-muted/10 text-ncpor-muted border-ncpor-divider';
+      default: return 'bg-ncpor-muted/10 text-ncpor-muted border-ncpor-divider';
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-display text-ncpor-primary">Publishing Dashboard</h1>
-        {platforms.publish_mode && (
-          <span className={`px-4 py-2 rounded-full font-bold text-sm ${platforms.publish_mode === 'dry_run' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800 animate-pulse'}`}>
+    <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-display text-ncpor-primary mb-1 tracking-tight">Publishing Dashboard</h1>
+        <p className="text-ncpor-secondary text-base">Track and manage your published content across platforms.</p>
+      </div>
+
+      {/* Mode indicator */}
+      {platforms.publish_mode && (
+        <div className="mb-8">
+          <span className={`px-4 py-2 rounded-full font-bold text-sm ${platforms.publish_mode === 'dry_run' ? 'bg-ncpor-accent/10 border border-ncpor-accent/30 text-ncpor-accent' : 'bg-red-500/10 border border-red-500/30 text-red-400 animate-pulse'}`}>
             {platforms.publish_mode === 'dry_run' ? 'DRY RUN MODE' : 'LIVE MODE - REAL POSTING ACTIVE'}
           </span>
-        )}
+        </div>
+      )}
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+        <div className="bg-ncpor-panel border border-ncpor-divider rounded-xl shadow-premium p-6 hover:-translate-y-[3px] hover:border-ncpor-accent/30 transition-all duration-220 ease-out">
+          <h3 className="text-ncpor-secondary text-xs font-semibold uppercase tracking-wider mb-3">Total Posts</h3>
+          <p className="text-5xl font-display text-ncpor-primary tabular-nums">{logs.length}</p>
+        </div>
+        <div className="bg-ncpor-panel border border-ncpor-divider rounded-xl shadow-premium p-6 hover:-translate-y-[3px] hover:border-ncpor-accent/30 transition-all duration-220 ease-out">
+          <h3 className="text-ncpor-secondary text-xs font-semibold uppercase tracking-wider mb-3">Successful</h3>
+          <p className="text-5xl font-display text-green-400 tabular-nums">{logs.filter(l => l.status === 'success').length}</p>
+        </div>
+        <div className="bg-ncpor-panel border border-ncpor-divider rounded-xl shadow-premium p-6 hover:-translate-y-[3px] hover:border-ncpor-accent/30 transition-all duration-220 ease-out">
+          <h3 className="text-ncpor-secondary text-xs font-semibold uppercase tracking-wider mb-3">Failed</h3>
+          <p className="text-5xl font-display text-red-400 tabular-nums">{logs.filter(l => l.status === 'failed').length}</p>
+        </div>
+        <div className="bg-ncpor-panel border border-ncpor-divider rounded-xl shadow-premium p-6 hover:-translate-y-[3px] hover:border-ncpor-accent/30 transition-all duration-220 ease-out">
+          <h3 className="text-ncpor-secondary text-xs font-semibold uppercase tracking-wider mb-3">Scheduled</h3>
+          <p className="text-5xl font-display text-blue-400 tabular-nums">{logs.filter(l => l.status === 'scheduled').length}</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-          <h3 className="text-gray-500 text-sm font-semibold uppercase tracking-wider mb-2">Total Posts</h3>
-          <p className="text-3xl font-bold text-ncpor-primary">{logs.length}</p>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-          <h3 className="text-gray-500 text-sm font-semibold uppercase tracking-wider mb-2">Successful</h3>
-          <p className="text-3xl font-bold text-green-600">{logs.filter(l => l.status === 'success').length}</p>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-          <h3 className="text-gray-500 text-sm font-semibold uppercase tracking-wider mb-2">Failed</h3>
-          <p className="text-3xl font-bold text-red-600">{logs.filter(l => l.status === 'failed').length}</p>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-          <h3 className="text-gray-500 text-sm font-semibold uppercase tracking-wider mb-2">Scheduled</h3>
-          <p className="text-3xl font-bold text-blue-600">{logs.filter(l => l.status === 'scheduled').length}</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow overflow-hidden">
+      {/* Table */}
+      <div className="bg-ncpor-panel border border-ncpor-divider rounded-xl shadow-premium overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-6 py-4 font-semibold text-gray-600">Time</th>
-              <th className="px-6 py-4 font-semibold text-gray-600">Platform</th>
-              <th className="px-6 py-4 font-semibold text-gray-600">Content ID</th>
-              <th className="px-6 py-4 font-semibold text-gray-600">Status</th>
-              <th className="px-6 py-4 font-semibold text-gray-600">Post link</th>
-              <th className="px-6 py-4 font-semibold text-gray-600">Actions</th>
+            <tr className="bg-ncpor-bg/50 border-b border-ncpor-divider">
+              <th className="px-6 py-4 font-semibold text-ncpor-secondary text-xs uppercase tracking-wider">Time</th>
+              <th className="px-6 py-4 font-semibold text-ncpor-secondary text-xs uppercase tracking-wider">Platform</th>
+              <th className="px-6 py-4 font-semibold text-ncpor-secondary text-xs uppercase tracking-wider">Content ID</th>
+              <th className="px-6 py-4 font-semibold text-ncpor-secondary text-xs uppercase tracking-wider">Status</th>
+              <th className="px-6 py-4 font-semibold text-ncpor-secondary text-xs uppercase tracking-wider">Post link</th>
+              <th className="px-6 py-4 font-semibold text-ncpor-secondary text-xs uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-ncpor-divider">
             {loading ? (
-              <tr><td colSpan="6" className="px-6 py-8 text-center text-gray-500">Loading logs...</td></tr>
+              <tr><td colSpan="6" className="px-6 py-8 text-center text-ncpor-muted">Loading logs...</td></tr>
             ) : logs.length === 0 ? (
-              <tr><td colSpan="6" className="px-6 py-8 text-center text-gray-500">No publishing history found.</td></tr>
+              <tr><td colSpan="6" className="px-6 py-8 text-center text-ncpor-muted">No publishing history found.</td></tr>
             ) : (
               logs.map(log => (
                 <React.Fragment key={log.id}>
-                  <tr className="hover:bg-gray-50 group">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {new Date(log.scheduled_at || log.created_at).toLocaleString()}
+                  <tr className="hover:bg-ncpor-bg/30 group transition-colors duration-150">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-ncpor-secondary">
+                      {new Date(log.scheduled_at || log.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} IST
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-ncpor-primary capitalize">{log.platform}</span>
                         {log.text_preview && (
-                          <button onClick={() => setExpandedId(expandedId === log.id ? null : log.id)} className="text-gray-400 hover:text-blue-500" title="Toggle preview">
+                          <button onClick={() => setExpandedId(expandedId === log.id ? null : log.id)} className="text-ncpor-muted hover:text-ncpor-accent transition-colors" title="Toggle preview">
                             <svg className={`w-4 h-4 transform transition-transform ${expandedId === log.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                           </button>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline cursor-pointer" onClick={() => window.location.href=`/content/${log.generated_content_id}`}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-ncpor-accent hover:underline cursor-pointer" onClick={() => window.location.href=`/content/${log.generated_content_id}`}>
                       #{log.generated_content_id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -138,47 +146,47 @@ const Publishing = () => {
                     </td>
                     <td className="px-6 py-4 text-sm max-w-sm">
                       {log.status === 'dry_run' ? (
-                        <span className="text-gray-400 italic">Dry run: not published</span>
+                        <span className="text-ncpor-muted italic">Dry run: not published</span>
                       ) : log.status === 'failed' ? (
-                        <span className="text-red-500 font-medium">{log.error_message || 'Failed'}</span>
+                        <span className="text-red-400 font-medium">{log.error_message || 'Failed'}</span>
                       ) : log.status === 'success' ? (
                         log.external_url === 'PRIVATE_TELEGRAM' ? (
-                          <span className="text-gray-500 italic">No public link (private channel)</span>
+                          <span className="text-ncpor-muted italic">No public link (private channel)</span>
                         ) : log.external_url ? (
                           <div>
                             <div className="flex items-center gap-2">
-                              <a href={log.external_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-medium inline-flex items-center gap-1">
+                              <a href={log.external_url} target="_blank" rel="noreferrer" className="text-ncpor-accent hover:underline font-medium inline-flex items-center gap-1">
                                 View post <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                               </a>
-                              <button onClick={() => handleCopy(log.external_url, log.id)} className="text-gray-400 hover:text-gray-600 transition-colors" title="Copy link">
+                              <button onClick={() => handleCopy(log.external_url, log.id)} className="text-ncpor-muted hover:text-ncpor-secondary transition-colors" title="Copy link">
                                 {copiedId === log.id ? (
-                                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                                 ) : (
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
                                 )}
                               </button>
                             </div>
-                            <div className="text-xs text-gray-400 truncate mt-1 max-w-[200px]" title={log.external_url}>{log.external_url}</div>
+                            <div className="text-xs text-ncpor-muted truncate mt-1 max-w-[200px]" title={log.external_url}>{log.external_url}</div>
                           </div>
                         ) : (
-                          <span className="text-gray-400 italic">Link unavailable</span>
+                          <span className="text-ncpor-muted italic">Link unavailable</span>
                         )
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-ncpor-muted">-</span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {log.status === 'scheduled' && (
-                        <button onClick={() => handleCancel(log.id)} className="text-red-500 hover:text-red-700 font-semibold">
+                        <button onClick={() => handleCancel(log.id)} className="text-red-400 hover:text-red-300 font-semibold transition-colors">
                           Cancel
                         </button>
                       )}
                     </td>
                   </tr>
                   {expandedId === log.id && log.text_preview && (
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                      <td colSpan="6" className="px-6 py-4 text-sm text-gray-600 italic">
-                        <div className="pl-4 border-l-2 border-gray-300">
+                    <tr className="bg-ncpor-bg/30 border-b border-ncpor-divider">
+                      <td colSpan="6" className="px-6 py-4 text-sm text-ncpor-secondary italic">
+                        <div className="pl-4 border-l-2 border-ncpor-divider">
                           {log.text_preview}
                         </div>
                       </td>

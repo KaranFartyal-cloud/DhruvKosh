@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
@@ -49,7 +50,13 @@ app.include_router(files.router, prefix="/api/files", tags=["files"])
 app.include_router(generated_content.router, prefix="/api/generated", tags=["generated_content"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 from app.routes import publish
+from fastapi.staticfiles import StaticFiles
+
 app.include_router(publish.router, prefix="/api/publish", tags=["publish"])
+
+# Mount uploads directory so images can be accessed publicly by external APIs (like Instagram)
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.on_event("startup")
 async def startup_event():

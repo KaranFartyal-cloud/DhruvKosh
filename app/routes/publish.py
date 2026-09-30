@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 import os
+import uuid
+import shutil
 
 from app.database import get_db
-from app.models import PublishLog, PublishLogStatus
+from app.models import PublishLog, PublishLogStatus, MediaItem
 from app.schemas import PublishLogResponse
 from app.services.publishers.registry import get_available_platforms
 from app.services.publish_service import publish_content, cancel_scheduled_publish
@@ -16,10 +18,18 @@ import json
 
 router = APIRouter()
 
+UPLOAD_DIR = "uploads"
+ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/heic", "image/heif"]
+
+
 class PublishRequest(BaseModel):
     platforms: List[str]
     media_id: Optional[int] = None
     scheduled_at: Optional[datetime] = None
+
+# ── Static routes FIRST (before any dynamic /{id} routes) ────────────────────
+# IMPORTANT: FastAPI matches routes top-to-bottom. If /{id} comes first,
+# then GET /log will try to cast "log" to int → 422 Unprocessable Entity.
 
 @router.get("/platforms")
 def get_platforms():
@@ -28,25 +38,41 @@ def get_platforms():
         "publish_mode": os.getenv("PUBLISH_MODE", "dry_run")
     }
 
-@router.post("/{generated_content_id}")
-async def create_publish(
-    generated_content_id: int, 
-    request: PublishRequest, 
+@router.post("/upload-image")
+async def upload_publish_image(
+    file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    try:
-        logs = await publish_content(
-            db=db,
-            generated_content_id=generated_content_id,
-            platforms=request.platforms,
-            media_id=request.media_id,
-            scheduled_at=request.scheduled_at
-        )
-        return {"logs": [{"id": log.id, "platform": log.platform, "status": log.status} for log in logs]}
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    """Upload an image to attach when publishing (e.g. for Instagram)."""
+    content = await file.read()
+    
+    # Validate file type
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=400, detail=f"Invalid image type: {file.content_type}. Allowed: JPEG, PNG, GIF, WebP")
+    
+    # Save to uploads/publish_images/
+    save_dir = os.path.join(UPLOAD_DIR, "publish_images")
+    os.makedirs(save_dir, exist_ok=True)
+    
+    ext = os.path.splitext(file.filename or "image.jpg")[1] or ".jpg"
+    unique_filename = f"{uuid.uuid4()}{ext}"
+    file_path = os.path.join(save_dir, unique_filename)
+    
+    with open(file_path, "wb") as f:
+        f.write(content)
+    
+    # Create MediaItem record so publish_service can find the file
+    media = MediaItem(
+        expedition_id=1,  # Use default expedition
+        title=file.filename or "Publish Image",
+        media_type="photo",
+        file_path=file_path,
+    )
+    db.add(media)
+    db.commit()
+    db.refresh(media)
+    
+    return {"media_id": media.id, "filename": unique_filename}
 
 @router.get("/log")
 def get_publish_log(
@@ -90,6 +116,13 @@ def get_publish_log(
         "items": items
     }
 
+@router.delete("/schedule/{log_id}")
+def cancel_publish(log_id: int, db: Session = Depends(get_db)):
+    log = cancel_scheduled_publish(db, log_id)
+    return {"message": "Scheduled publish cancelled", "status": log.status}
+
+# ── Dynamic routes AFTER static routes ───────────────────────────────────────
+
 @router.get("/{generated_content_id}/status", response_model=List[PublishLogResponse])
 def get_publish_status(generated_content_id: int, db: Session = Depends(get_db)):
     logs = db.query(PublishLog).filter(
@@ -97,10 +130,25 @@ def get_publish_status(generated_content_id: int, db: Session = Depends(get_db))
     ).order_by(PublishLog.created_at.desc()).all()
     return logs
 
-@router.delete("/schedule/{log_id}")
-def cancel_publish(log_id: int, db: Session = Depends(get_db)):
-    log = cancel_scheduled_publish(db, log_id)
-    return {"message": "Scheduled publish cancelled", "status": log.status}
+@router.post("/{generated_content_id}")
+async def create_publish(
+    generated_content_id: int, 
+    request: PublishRequest, 
+    db: Session = Depends(get_db)
+):
+    try:
+        logs = await publish_content(
+            db=db,
+            generated_content_id=generated_content_id,
+            platforms=request.platforms,
+            media_id=request.media_id,
+            scheduled_at=request.scheduled_at
+        )
+        return {"logs": [{"id": log.id, "platform": log.platform, "status": log.status} for log in logs]}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/linkedin/login")
 def linkedin_login():
