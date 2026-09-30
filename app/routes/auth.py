@@ -5,12 +5,18 @@ import hashlib
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import Optional
+from pydantic import BaseModel
 from app.database import get_db
 from app.models import User, Role
 from app.schemas import UserCreate, User as UserSchema, LoginResponse
 import os
+import httpx
 
 router = APIRouter()
+
+# Request models
+class GoogleAuthRequest(BaseModel):
+    credential: str
 
 # Security
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
@@ -113,34 +119,24 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     )
 
 @router.post("/google", response_model=LoginResponse)
-def google_login(credential: str, db: Session = Depends(get_db)):
+def google_login(request: GoogleAuthRequest, db: Session = Depends(get_db)):
     """
     Google OAuth login endpoint.
-    For hackathon demo: accepts Google credential and creates/returns user.
-    In production, verify the credential with Google's token info endpoint.
+    Verifies the Firebase ID token using Google's tokeninfo endpoint.
     """
-    import json
-    import base64
-    
     try:
-        # Decode JWT (simplified for demo - in production use google-auth library)
-        # For demo purposes, we'll extract email from the credential
-        # In production, verify with: https://oauth2.googleapis.com/tokeninfo?id_token={credential}
-        parts = credential.split('.')
-        if len(parts) != 3:
-            raise HTTPException(status_code=400, detail="Invalid Google credential")
+        # Verify token with Google's tokeninfo endpoint
+        response = httpx.get(
+            f"https://oauth2.googleapis.com/tokeninfo?id_token={request.credential}",
+            timeout=10.0
+        )
         
-        # Decode payload (base64url)
-        payload = parts[1]
-        # Add padding if needed
-        padding = 4 - len(payload) % 4
-        if padding != 4:
-            payload += '=' * padding
-        decoded = base64.urlsafe_b64decode(payload)
-        payload_data = json.loads(decoded)
+        if response.status_code != 200:
+            raise HTTPException(status_code=401, detail="Invalid Google ID token")
         
-        email = payload_data.get('email')
-        name = payload_data.get('name', email.split('@')[0])
+        token_data = response.json()
+        email = token_data.get('email')
+        name = token_data.get('name', email.split('@')[0] if email else 'Google User')
         
         if not email:
             raise HTTPException(status_code=400, detail="Could not extract email from Google credential")
@@ -160,7 +156,7 @@ def google_login(credential: str, db: Session = Depends(get_db)):
             db.commit()
             db.refresh(user)
         
-        # Generate token
+        # Generate JWT token for our app
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={"sub": user.id, "role": user.role.value},
@@ -173,7 +169,7 @@ def google_login(credential: str, db: Session = Depends(get_db)):
             user=UserSchema.from_orm(user)
         )
         
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid Google credential format")
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Google verification timeout")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Google auth failed: {str(e)}")
