@@ -1,13 +1,12 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'https://dhruvkosh.onrender.com';
+// Use the shared authenticated axios instance (includes JWT Bearer token automatically)
+import api from '../utils/api';
 
 const publishAPI = {
-  getPlatforms: () => axios.get(`${API_URL}/api/publish/platforms`),
-  publishContent: (id, data) => axios.post(`${API_URL}/api/publish/${id}`, data),
-  getPublishLog: (params) => axios.get(`${API_URL}/api/publish/log`, { params }),
-  getPublishStatus: (id) => axios.get(`${API_URL}/api/publish/${id}/status`),
-  cancelScheduled: (logId) => axios.delete(`${API_URL}/api/publish/schedule/${logId}`),
+  getPlatforms: () => api.get('/api/publish/platforms'),
+  publishContent: (id, data) => api.post(`/api/publish/${id}`, data),
+  getPublishLog: (params) => api.get('/api/publish/log', { params }),
+  getPublishStatus: (id) => api.get(`/api/publish/${id}/status`),
+  cancelScheduled: (logId) => api.delete(`/api/publish/schedule/${logId}`),
 };
 
 export default publishAPI;
