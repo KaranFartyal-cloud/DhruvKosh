@@ -139,24 +139,13 @@ const Auth = () => {
 
       {/* Brand Panel */}
       <div className="md:w-[52%] w-full bg-gradient-to-br from-[#05080F] to-[#0D1422] relative overflow-hidden flex flex-col justify-between p-8 md:p-12 animate-fade-in md:min-h-screen">
-        <div className="absolute inset-0 pointer-events-none opacity-40 mix-blend-screen">
-          <svg className="w-full h-full animate-spin-slow-brand origin-center" viewBox="0 0 1000 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="500" cy="500" r="400" stroke="#7FE7F5" strokeWidth="0.5" strokeDasharray="4 8" className="animate-pulse-slow" />
-            <circle cx="500" cy="500" r="300" stroke="#7FE7F5" strokeWidth="0.5" strokeOpacity="0.5" />
-            <circle cx="500" cy="500" r="200" stroke="#7FE7F5" strokeWidth="0.5" strokeOpacity="0.2" />
-            <path d="M500 100 L500 900 M100 500 L900 500 M217 217 L783 783 M217 783 L783 217" stroke="#7FE7F5" strokeWidth="0.5" strokeOpacity="0.1" />
-            <circle cx="450" cy="350" r="4" fill="#F5A623" className="animate-pulse-fast" />
-            <circle cx="550" cy="650" r="4" fill="#F5A623" className="animate-pulse-fast" style={{animationDelay: '1s'}} />
-            <circle cx="650" cy="450" r="4" fill="#F5A623" className="animate-pulse-fast" style={{animationDelay: '2s'}} />
-          </svg>
-        </div>
 
         {/* Threads Animation */}
-        <div className="absolute inset-0 pointer-events-none opacity-30">
+        <div className="absolute inset-0 pointer-events-none opacity-20">
           <Threads
             color={[0.5, 0.9, 0.96]}
-            amplitude={0.8}
-            distance={0.5}
+            amplitude={0.3}
+            distance={0.2}
             enableMouseInteraction={true}
           />
         </div>
