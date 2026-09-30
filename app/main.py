@@ -4,6 +4,7 @@ from app.database import init_db
 from app.routes import expeditions, reports, datasets, publications, media, activities, files, auth, generated_content
 import uvicorn
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
 
@@ -24,11 +25,17 @@ async def global_exception_handler(request, exc):
 # CORS enabled for all origins (hackathon demo)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # keep for non-credential requests just in case
-    allow_origin_regex=".*",
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:3000",
+        "https://dhruv-kosh.vercel.app",
+        "*"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Include routers

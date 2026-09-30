@@ -9,6 +9,10 @@ from app.database import get_db
 from app.models import User, Role
 from app.schemas import UserCreate, User as UserSchema, LoginResponse
 import os
+import secrets
+from pydantic import BaseModel
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 router = APIRouter()
 
@@ -111,3 +115,61 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         token_type="bearer",
         user=UserSchema.from_orm(user)
     )
+
+class GoogleAuthRequest(BaseModel):
+    credential: str
+
+@router.options("/google")
+def google_login_options():
+    return {"message": "OK"}
+
+@router.post("/google", response_model=LoginResponse)
+def google_login(request: GoogleAuthRequest, db: Session = Depends(get_db)):
+    client_id = os.getenv("VITE_GOOGLE_CLIENT_ID")
+    if not client_id:
+        raise HTTPException(status_code=500, detail="Google Client ID not configured on server")
+        
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            request.credential, 
+            google_requests.Request(), 
+            client_id
+        )
+        
+        email = idinfo.get("email")
+        name = idinfo.get("name", "Google User")
+        
+        if not email:
+            raise HTTPException(status_code=400, detail="No email provided by Google")
+            
+        user = db.query(User).filter(User.email == email).first()
+        
+        if not user:
+            random_pass = secrets.token_urlsafe(32)
+            hashed_password = get_password_hash(random_pass)
+            
+            user = User(
+                name=name,
+                email=email,
+                role=Role.viewer,
+                password_hash=hashed_password
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.id, "role": user.role.value},
+            expires_delta=access_token_expires
+        )
+        
+        return LoginResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=UserSchema.from_orm(user)
+        )
+        
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=f"Invalid Google token: {str(e)}")
+
