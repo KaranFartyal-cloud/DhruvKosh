@@ -117,15 +117,20 @@ const Auth = () => {
     setLoading(true);
     setError(null);
     try {
+      console.log('Starting Google sign-in...');
       // Sign in with Firebase Google
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
+      console.log('Firebase sign-in successful:', user.email);
 
       // Get ID token from Firebase
       const idToken = await user.getIdToken();
+      console.log('Got ID token from Firebase');
 
       // Send to backend
+      console.log('Sending to backend...');
       await googleSignIn(idToken);
+      console.log('Backend auth successful');
     } catch (err) {
       console.error('Google Auth error:', err);
       const msg = err.response?.data?.detail || err.message || 'Google sign-in failed. Please try again.';
