@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import dhruvLogo from '../assets/dhruv_logo.png';
 import { Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 
@@ -11,6 +12,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, signup, googleSignIn } = useAuth();
+  const { isLight } = useTheme();
   
   const isSignupRoute = location.pathname === '/signup';
   const [isLogin, setIsLogin] = useState(!isSignupRoute);

@@ -111,3 +111,69 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         token_type="bearer",
         user=UserSchema.from_orm(user)
     )
+
+@router.post("/google", response_model=LoginResponse)
+def google_login(credential: str, db: Session = Depends(get_db)):
+    """
+    Google OAuth login endpoint.
+    For hackathon demo: accepts Google credential and creates/returns user.
+    In production, verify the credential with Google's token info endpoint.
+    """
+    import json
+    import base64
+    
+    try:
+        # Decode JWT (simplified for demo - in production use google-auth library)
+        # For demo purposes, we'll extract email from the credential
+        # In production, verify with: https://oauth2.googleapis.com/tokeninfo?id_token={credential}
+        parts = credential.split('.')
+        if len(parts) != 3:
+            raise HTTPException(status_code=400, detail="Invalid Google credential")
+        
+        # Decode payload (base64url)
+        payload = parts[1]
+        # Add padding if needed
+        padding = 4 - len(payload) % 4
+        if padding != 4:
+            payload += '=' * padding
+        decoded = base64.urlsafe_b64decode(payload)
+        payload_data = json.loads(decoded)
+        
+        email = payload_data.get('email')
+        name = payload_data.get('name', email.split('@')[0])
+        
+        if not email:
+            raise HTTPException(status_code=400, detail="Could not extract email from Google credential")
+        
+        # Check if user exists
+        user = db.query(User).filter(User.email == email).first()
+        
+        # Create user if doesn't exist
+        if not user:
+            user = User(
+                name=name,
+                email=email,
+                role=Role.viewer,
+                password_hash=get_password_hash("google-auth-user")  # Placeholder password
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        
+        # Generate token
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.id, "role": user.role.value},
+            expires_delta=access_token_expires
+        )
+        
+        return LoginResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=UserSchema.from_orm(user)
+        )
+        
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid Google credential format")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Google auth failed: {str(e)}")

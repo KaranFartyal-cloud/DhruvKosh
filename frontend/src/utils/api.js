@@ -559,7 +559,7 @@ export const authAPI = {
     ),
 
   register: async (data) => api.post(API_CONFIG.endpoints.register, data),
-  googleLogin: async (credential) => api.post('/api/auth/google', { credential }),
+  googleLogin: async (credential) => api.post(API_CONFIG.endpoints.google, { credential }),
 };
 
 // ─── healthAPI ────────────────────────────────────────────────────────────────
