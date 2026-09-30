@@ -107,7 +107,7 @@ const Publishing = () => {
                 <React.Fragment key={log.id}>
                   <tr className="hover:bg-gray-50 group">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {new Date(log.scheduled_at || log.created_at).toLocaleString()}
+                      {new Date(log.scheduled_at || log.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} IST
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
