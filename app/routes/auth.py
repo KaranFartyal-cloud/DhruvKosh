@@ -10,7 +10,6 @@ from app.database import get_db
 from app.models import User, Role
 from app.schemas import UserCreate, User as UserSchema, LoginResponse
 import os
-import httpx
 
 router = APIRouter()
 
