@@ -6,6 +6,7 @@ import { auth, googleProvider } from '../config/firebase';
 import { signInWithPopup } from 'firebase/auth';
 import dhruvLogo from '../assets/dhruv_logo.png';
 import { Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import Threads from '../components/Threads';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -148,6 +149,16 @@ const Auth = () => {
             <circle cx="550" cy="650" r="4" fill="#F5A623" className="animate-pulse-fast" style={{animationDelay: '1s'}} />
             <circle cx="650" cy="450" r="4" fill="#F5A623" className="animate-pulse-fast" style={{animationDelay: '2s'}} />
           </svg>
+        </div>
+
+        {/* Threads Animation */}
+        <div className="absolute inset-0 pointer-events-none opacity-30">
+          <Threads
+            color={[0.5, 0.9, 0.96]}
+            amplitude={0.8}
+            distance={0.5}
+            enableMouseInteraction={true}
+          />
         </div>
         
         <div className="relative z-10">
