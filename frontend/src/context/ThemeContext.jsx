@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 
 const ThemeContext = createContext({
   theme: 'dark',
@@ -7,35 +7,21 @@ const ThemeContext = createContext({
 });
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('dhruvkosh_theme');
-    if (saved) return saved;
-    return 'dark';
-  });
-
-  const isLight = theme === 'light';
+  const theme = 'dark';
+  const isLight = false;
 
   useEffect(() => {
-    localStorage.setItem('dhruvkosh_theme', theme);
+    localStorage.setItem('dhruvkosh_theme', 'dark');
     const root = document.documentElement;
-    if (theme === 'light') {
-      root.classList.add('light');
-      root.classList.remove('dark');
-      document.body.classList.add('light');
-      document.body.classList.remove('dark');
-    } else {
-      root.classList.add('dark');
-      root.classList.remove('light');
-      document.body.classList.add('dark');
-      document.body.classList.remove('light');
-    }
-  }, [theme]);
+    root.classList.add('dark');
+    root.classList.remove('light');
+    document.body.classList.add('dark');
+    document.body.classList.remove('light');
+  }, []);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
+  const toggleTheme = () => {};
 
-  const contextValue = React.useMemo(() => ({ theme, isLight, toggleTheme }), [theme, isLight]);
+  const contextValue = React.useMemo(() => ({ theme: 'dark', isLight: false, toggleTheme }), []);
 
   return (
     <ThemeContext.Provider value={contextValue}>

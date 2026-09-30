@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense } from 'react';
-import { Search, ArrowUpRight, Globe, Layers } from 'lucide-react';
+import { Search, ArrowUpRight, Globe, Layers, Mountain } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 const PolarGlobe3D = React.lazy(() => import('./PolarGlobe3D'));
@@ -11,6 +11,7 @@ const SEARCH_PLACEHOLDERS = [
   "Bharati atmospheric lidar data",
   "Maitri geomagnetic surveys",
   "Himadri Arctic permafrost samples",
+  "Himansh high-altitude glacier mass balance",
 ];
 
 function useMagnetic(strength = 5) {
@@ -170,8 +171,8 @@ export const PolarGlobeHero3D = ({ onSearch, className = '' }) => {
           </div>
         </Suspense>
 
-        {/* Antarctic / Arctic View Realm Toggle */}
-        <div className="absolute bottom-6 right-6 sm:bottom-10 sm:right-12 z-40 flex items-center gap-1.5 p-1 rounded-full border border-white/10 bg-[#0D1422]/95 shadow-sm">
+        {/* Polar Realms: Antarctica, Arctic, Himalayas (Third Pole) */}
+        <div className="absolute bottom-6 right-6 sm:bottom-10 sm:right-12 z-40 flex items-center gap-1.5 p-1 rounded-full border border-white/10 bg-[#0D1422]/95 backdrop-blur-md shadow-xl">
           <button
             onClick={() => setPolarView('antarctic')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
@@ -183,7 +184,7 @@ export const PolarGlobeHero3D = ({ onSearch, className = '' }) => {
             }`}
           >
             <Globe className="w-3.5 h-3.5" />
-            <span>Antarctica (Maitri & Bharati)</span>
+            <span>Antarctica</span>
           </button>
 
           <button
@@ -197,7 +198,21 @@ export const PolarGlobeHero3D = ({ onSearch, className = '' }) => {
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>Arctic (Himadri)</span>
+            <span>Arctic</span>
+          </button>
+
+          <button
+            onClick={() => setPolarView('himalayas')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
+              polarView === 'himalayas'
+                ? isLight
+                  ? 'bg-white text-[#0A7C8C] shadow-sm font-semibold'
+                  : 'bg-[#7FE7F5]/20 text-[#7FE7F5] border border-[#7FE7F5]/30 shadow-sm font-semibold'
+                : 'text-[#8592A6] hover:text-[#EAF0F8]'
+            }`}
+          >
+            <Mountain className="w-3.5 h-3.5" />
+            <span>Himalayas (Himansh)</span>
           </button>
         </div>
       </div>
