@@ -47,18 +47,18 @@ const ExpeditionsList = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-slate-800">Expeditions</h1>
-        <button onClick={() => setShowModal(true)} className="bg-ocean-600 hover:bg-ocean-700 text-white px-4 py-2 rounded-lg shadow flex items-center space-x-2 transition-colors">
+        <h1 className="text-3xl font-display text-ncpor-primary">Expeditions</h1>
+        <button onClick={() => setShowModal(true)} className="bg-ncpor-accent hover:bg-ncpor-accent/90 text-ncpor-bg px-4 py-2 rounded-lg shadow font-bold flex items-center space-x-2 transition-colors">
           <Plus className="h-5 w-5" />
           <span>New Expedition</span>
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center">
+      <div className="bg-ncpor-card rounded-xl shadow-premium border border-ncpor-border overflow-hidden">
+        <div className="p-4 border-b border-ncpor-border bg-ncpor-bgSecondary flex items-center">
           <div className="relative w-64">
-            <Search className="h-5 w-5 absolute left-3 top-2.5 text-slate-400" />
-            <input type="text" placeholder="Search expeditions..." className="pl-10 pr-4 py-2 w-full border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean-500" />
+            <Search className="h-5 w-5 absolute left-3 top-2.5 text-ncpor-textMuted" />
+            <input type="text" placeholder="Search expeditions..." className="pl-10 pr-4 py-2 w-full bg-ncpor-bgSecondary border border-ncpor-border text-ncpor-textPrimary rounded-lg focus:outline-none focus:border-ncpor-accent focus:ring-1 focus:ring-ncpor-accent" />
           </div>
         </div>
 
@@ -69,7 +69,7 @@ const ExpeditionsList = () => {
         ) : (
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
+              <tr className="bg-ncpor-bgSecondary text-ncpor-textSecondary text-sm border-b border-ncpor-border">
                 <th className="p-4 font-semibold">Name</th>
                 <th className="p-4 font-semibold">Code</th>
                 <th className="p-4 font-semibold">Region</th>
@@ -77,22 +77,22 @@ const ExpeditionsList = () => {
                 <th className="p-4 font-semibold">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-ncpor-border">
               {expeditions?.map(exp => (
-                <tr key={exp.id} className="hover:bg-ice-50 transition-colors">
+                <tr key={exp.id} className="hover:bg-ncpor-bgSecondary/50 transition-colors">
                   <td className="p-4">
-                    <Link to={`/admin/expeditions/${exp.id}`} className="font-semibold text-ocean-700 hover:underline">
+                    <Link to={`/admin/expeditions/${exp.id}`} className="font-semibold text-ncpor-accent hover:underline">
                       {exp.name}
                     </Link>
                   </td>
-                  <td className="p-4 text-slate-600">{exp.expedition_code}</td>
-                  <td className="p-4 text-slate-600 capitalize">{exp.region.replace('_', ' ')}</td>
-                  <td className="p-4 text-slate-600">
+                  <td className="p-4 text-ncpor-textSecondary">{exp.expedition_code}</td>
+                  <td className="p-4 text-ncpor-textSecondary capitalize">{exp.region.replace('_', ' ')}</td>
+                  <td className="p-4 text-ncpor-textSecondary">
                     {exp.start_date} {exp.end_date ? `to ${exp.end_date}` : ''}
                   </td>
                   <td className="p-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${exp.status === 'completed' ? 'bg-teal-100 text-teal-800' :
-                        exp.status === 'ongoing' ? 'bg-ocean-100 text-ocean-800' :
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${exp.status === 'completed' ? 'bg-teal-100 text-teal-800' :
+                        exp.status === 'ongoing' ? 'bg-blue-100 text-blue-800' :
                           'bg-yellow-100 text-yellow-800'
                       }`}>
                       {exp.status}
@@ -106,21 +106,21 @@ const ExpeditionsList = () => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
-            <h2 className="text-xl font-bold text-slate-800 mb-4">Create New Expedition</h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-ncpor-card border border-ncpor-border rounded-xl shadow-premium max-w-md w-full p-6">
+            <h2 className="text-xl font-bold text-ncpor-primary mb-4">Create New Expedition</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
-                <input required type="text" name="name" value={formData.name} onChange={handleChange} className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-ocean-500 outline-none" />
+                <label className="block text-sm font-medium text-ncpor-textSecondary mb-1">Name</label>
+                <input required type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-ncpor-bgSecondary border border-ncpor-border text-ncpor-primary rounded p-2 focus:outline-none focus:border-ncpor-accent focus:ring-1 focus:ring-ncpor-accent" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Expedition Code</label>
-                <input required type="text" name="expedition_code" value={formData.expedition_code} onChange={handleChange} className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-ocean-500 outline-none" />
+                <label className="block text-sm font-medium text-ncpor-textSecondary mb-1">Expedition Code</label>
+                <input required type="text" name="expedition_code" value={formData.expedition_code} onChange={handleChange} className="w-full bg-ncpor-bgSecondary border border-ncpor-border text-ncpor-primary rounded p-2 focus:outline-none focus:border-ncpor-accent focus:ring-1 focus:ring-ncpor-accent" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Region</label>
-                <select name="region" value={formData.region} onChange={handleChange} className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-ocean-500 outline-none">
+                <label className="block text-sm font-medium text-ncpor-textSecondary mb-1">Region</label>
+                <select name="region" value={formData.region} onChange={handleChange} className="w-full bg-ncpor-bgSecondary border border-ncpor-border text-ncpor-primary rounded p-2 focus:outline-none focus:border-ncpor-accent focus:ring-1 focus:ring-ncpor-accent">
                   <option value="antarctic">Antarctic</option>
                   <option value="arctic">Arctic</option>
                   <option value="himalaya">Himalaya</option>
@@ -129,17 +129,17 @@ const ExpeditionsList = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
-                  <input type="date" name="start_date" value={formData.start_date} onChange={handleChange} className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-ocean-500 outline-none" />
+                  <label className="block text-sm font-medium text-ncpor-textSecondary mb-1">Start Date</label>
+                  <input type="date" name="start_date" value={formData.start_date} onChange={handleChange} className="w-full bg-ncpor-bgSecondary border border-ncpor-border text-ncpor-primary rounded p-2 focus:outline-none focus:border-ncpor-accent focus:ring-1 focus:ring-ncpor-accent" style={{colorScheme: 'dark'}} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">End Date</label>
-                  <input type="date" name="end_date" value={formData.end_date} onChange={handleChange} className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-ocean-500 outline-none" />
+                  <label className="block text-sm font-medium text-ncpor-textSecondary mb-1">End Date</label>
+                  <input type="date" name="end_date" value={formData.end_date} onChange={handleChange} className="w-full bg-ncpor-bgSecondary border border-ncpor-border text-ncpor-primary rounded p-2 focus:outline-none focus:border-ncpor-accent focus:ring-1 focus:ring-ncpor-accent" style={{colorScheme: 'dark'}} />
                 </div>
               </div>
               <div className="flex justify-end space-x-3 mt-6">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded font-medium">Cancel</button>
-                <button type="submit" disabled={mutation.isPending} className="px-6 py-2 bg-ocean-600 text-white hover:bg-ocean-700 rounded-lg shadow font-medium">
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-ncpor-textSecondary hover:bg-ncpor-bgSecondary rounded font-medium transition-colors">Cancel</button>
+                <button type="submit" disabled={mutation.isPending} className="px-6 py-2 bg-ncpor-accent text-ncpor-bg hover:bg-ncpor-accent/90 rounded-lg shadow font-bold transition-colors">
                   {mutation.isPending ? 'Creating...' : 'Create'}
                 </button>
               </div>
