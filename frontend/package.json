@@ -21,11 +21,7 @@
     "@tanstack/react-query": "^5.104.0",
     "axios": "^1.20.0",
     "firebase": "^12.19.0",
-<<<<<<< HEAD
     "framer-motion": "^13.5.1",
-=======
-    "framer-motion": "^14.0.0",
->>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
     "lucide-react": "^1.48.0",
     "ogl": "^1.0.11",
     "pdfjs-dist": "^6.3.289",

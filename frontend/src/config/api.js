@@ -47,21 +47,15 @@ export const API_CONFIG = {
     updateGeneratedStatus: (id) => `/api/generated/generated-content/${id}/status`,
     publicGenerated:   '/api/generated/public',
 
-    // Auth
-<<<<<<< HEAD
     login:              '/api/auth/login',
     register:           '/api/auth/register',
     registerResearcher: '/api/auth/register-researcher',
     googleLogin:        '/api/auth/google-login',
+    google:             '/api/auth/google',
     getMe:              '/api/auth/me',
     researchers:        '/api/auth/researchers',
     approveResearcher:  (id) => `/api/auth/researchers/${id}/approve`,
     rejectResearcher:   (id) => `/api/auth/researchers/${id}/reject`,
-=======
-    login:    '/api/auth/login',
-    register: '/api/auth/register',
-    google:   '/api/auth/google',
->>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
   }
 };
 

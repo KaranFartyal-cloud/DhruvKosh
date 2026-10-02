@@ -632,7 +632,6 @@ export const authAPI = {
   },
 
   register: async (data) => api.post(API_CONFIG.endpoints.register, data),
-<<<<<<< HEAD
 
   registerResearcher: async (data) => {
     // Store credentials locally for local login fallback
@@ -843,9 +842,6 @@ export const authAPI = {
       return { data: { message: 'Rejected successfully' } };
     }
   },
-=======
-  googleLogin: async (credential) => api.post(API_CONFIG.endpoints.google, { credential }),
->>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
 };
 
 // ─── healthAPI ────────────────────────────────────────────────────────────────

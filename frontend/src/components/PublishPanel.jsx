@@ -1,19 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import publishAPI from '../api/publish';
-<<<<<<< HEAD
 import { useAuth } from '../context/AuthContext';
 import { AlertCircle, Clock, ShieldAlert } from 'lucide-react';
-
-const PublishPanel = ({ post, onPublishSuccess }) => {
-  const { user, canPublishSocial, isPendingResearcher, isNormalUser } = useAuth();
-=======
 import { useInvalidateLiveStats } from '../hooks/useLiveStats';
 
 const PublishPanel = ({ post, onPublishSuccess }) => {
   const queryClient = useQueryClient();
   const invalidateLiveStats = useInvalidateLiveStats();
->>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
+  const { user, canPublishSocial, isPendingResearcher, isNormalUser } = useAuth();
   const [platforms, setPlatforms] = useState({ configured_platforms: [], publish_mode: 'dry_run' });
   const [selectedPlatforms, setSelectedPlatforms] = useState([]);
   const [scheduleDate, setScheduleDate] = useState('');
