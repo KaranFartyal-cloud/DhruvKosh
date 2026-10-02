@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
 
-const Quiz = ({ questions }) => {
+const Quiz = ({ questions, expeditionName }) => {
   if (!questions || questions.length === 0) return null;
 
   return (
     <div className="space-y-6">
-      <h3 className="text-xl font-bold text-ocean-800 border-b pb-2">Test Your Knowledge</h3>
+      <h3 className="text-xl font-bold font-display text-ncpor-primary border-b border-ncpor-border pb-2">
+        Test Your Knowledge {expeditionName ? `· ${expeditionName}` : ''}
+      </h3>
       {questions.map((q, idx) => (
         <QuizQuestion key={idx} question={q} index={idx} />
       ))}
@@ -33,25 +35,25 @@ const QuizQuestion = ({ question, index }) => {
   const isCorrect = selectedOption === question.correct_index;
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-      <h4 className="font-semibold text-lg text-slate-800 mb-4">
+    <div className="bg-ncpor-card p-6 rounded-xl shadow-premium border border-ncpor-border">
+      <h4 className="font-semibold text-base text-ncpor-primary mb-4">
         {index + 1}. {question.question}
       </h4>
       <div className="space-y-3">
         {question.options.map((opt, idx) => {
-          let buttonClass = "w-full text-left p-4 rounded-lg border transition-all ";
+          let buttonClass = "w-full text-left p-4 rounded-lg border text-sm transition-all ";
           
           if (!isSubmitted) {
             buttonClass += selectedOption === idx 
-              ? "border-ocean-500 bg-ocean-50 ring-2 ring-ocean-200" 
-              : "border-slate-200 hover:border-ocean-300 hover:bg-slate-50";
+              ? "border-ncpor-accent bg-ncpor-accent/15 text-ncpor-primary ring-1 ring-ncpor-accent/40" 
+              : "border-ncpor-border bg-ncpor-bgSecondary/60 text-ncpor-secondary hover:border-ncpor-accent/50 hover:bg-ncpor-bgSecondary hover:text-ncpor-primary";
           } else {
             if (idx === question.correct_index) {
-              buttonClass += "border-green-500 bg-green-50";
+              buttonClass += "border-emerald-500/80 bg-emerald-500/15 text-emerald-300 font-medium";
             } else if (idx === selectedOption) {
-              buttonClass += "border-red-500 bg-red-50";
+              buttonClass += "border-red-500/80 bg-red-500/15 text-red-300 font-medium";
             } else {
-              buttonClass += "border-slate-200 opacity-50";
+              buttonClass += "border-ncpor-border bg-ncpor-bgSecondary/30 text-ncpor-muted opacity-50";
             }
           }
 
@@ -65,10 +67,10 @@ const QuizQuestion = ({ question, index }) => {
               <div className="flex items-center justify-between">
                 <span>{opt}</span>
                 {isSubmitted && idx === question.correct_index && (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0 ml-2" />
                 )}
                 {isSubmitted && idx === selectedOption && idx !== question.correct_index && (
-                  <XCircle className="h-5 w-5 text-red-500" />
+                  <XCircle className="h-5 w-5 text-red-400 flex-shrink-0 ml-2" />
                 )}
               </div>
             </button>
@@ -80,10 +82,10 @@ const QuizQuestion = ({ question, index }) => {
         <button
           onClick={checkAnswer}
           disabled={selectedOption === null}
-          className={`mt-4 px-6 py-2 rounded-lg font-medium ${
+          className={`mt-4 px-6 py-2 rounded-lg text-sm font-semibold transition-all ${
             selectedOption !== null
-              ? "bg-ocean-600 text-white hover:bg-ocean-700"
-              : "bg-slate-200 text-slate-400 cursor-not-allowed"
+              ? "bg-ncpor-accent text-ncpor-bg hover:opacity-90 shadow-md"
+              : "bg-ncpor-bgSecondary border border-ncpor-border text-ncpor-muted cursor-not-allowed"
           }`}
         >
           Check Answer
@@ -98,10 +100,10 @@ const QuizQuestion = ({ question, index }) => {
             )}
           </div>
           <div>
-            <p className={`font-medium ${isCorrect ? 'text-emerald-300' : 'text-red-300'}`}>
-              {isCorrect ? 'Correct!' : 'Incorrect.'}
+            <p className={`font-semibold text-sm ${isCorrect ? 'text-emerald-300' : 'text-red-300'}`}>
+              {isCorrect ? 'Correct! 🌟' : 'Incorrect.'}
             </p>
-            <p className="text-ncpor-secondary mt-1 text-sm">{question.explanation}</p>
+            <p className="text-ncpor-secondary mt-1 text-sm leading-relaxed">{question.explanation}</p>
           </div>
         </div>
       )}
