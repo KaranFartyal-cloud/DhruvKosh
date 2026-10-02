@@ -327,6 +327,7 @@ from typing import Optional
 class ExpeditionChatRequest(BaseModel):
     message: str
     user_type: Optional[str] = "student"
+    history: Optional[list[dict]] = []
 
 @router.post("/expedition/{expedition_id}/chat")
 async def chat_with_expedition(
@@ -402,12 +403,19 @@ async def chat_with_expedition(
                 f"Emotions: HAPPY, FRIENDLY, EXCITED, SAD, SORRY, ANGRY, SURPRISED, CALM, RELAXED, THINKING, CONFUSED, SERIOUS, SUPPORTIVE, NEUTRAL.\n"
                 f"Animations: IDLE, BREATHING, SPEAKING, EXPLAIN, POINT, DISMISSING, HANDGESTURE, WAVE, NOD, HARDNOD, VICTORY, CHEER, CLAP, LAUGH, QUIZ_CORRECT, QUIZ_WRONG, THINKING, TYPING, SAD, DEFEAT, ANGRY, ANNOYED, SHAKENO, SARCASTIC, THANKFUL, SURPRISED, YAWN, SIGH, LOOKAROUND, LOOKAWAY, NERVOUS, SHY, COVERMOUTH, BEINGCOCKY, STEPBACK, DANCE."
             )
+            msgs = [{"role": "system", "content": system_prompt}]
+            
+            # Append last 6 messages from history (3 turns)
+            if request.history:
+                for h in request.history[-6:]:
+                    if h.get("role") in ["user", "assistant"]:
+                        msgs.append({"role": h["role"], "content": h.get("content", "")})
+            
+            msgs.append({"role": "user", "content": request.message})
+
             completion = client.chat.completions.create(
                 model="openai/gpt-oss-120b",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": request.message}
-                ],
+                messages=msgs,
                 temperature=0.7,
                 max_tokens=300
             )

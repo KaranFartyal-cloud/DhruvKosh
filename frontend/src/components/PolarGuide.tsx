@@ -78,7 +78,7 @@ function getPolarFallback(message: string, mode: string) {
 }
 
 export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
-  const { addChatMessage } = useAppStore();
+  const { addChatMessage, mascot } = useAppStore();
   const { startListening, stopListening, isListening } = useSpeech();
 
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -113,7 +113,11 @@ export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
       const response = await fetch(`${API_BASE_URL}/api/generated/expedition/1/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, user_type: chatMode }),
+        body: JSON.stringify({ 
+          message, 
+          user_type: chatMode,
+          history: mascot.chatHistory 
+        }),
         signal: controller.signal
       });
 
@@ -187,9 +191,8 @@ export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
       {/* 🟢 MAIN UI */}
       <div className="absolute inset-0 z-20 flex flex-col md:flex-row w-full h-full pointer-events-none">
         
-        {/* Chat History Panel (Left side) */}
-        <div className="hidden lg:block w-[400px] h-full relative z-30 pointer-events-auto p-6 pl-0 pt-0">
-          <ChatHistoryPanel />
+        {/* Left side padding to center character visually */}
+        <div className="hidden lg:block w-[400px] h-full relative z-30 pointer-events-none p-6 pl-0 pt-0">
         </div>
         
         {/* Chat Input (Bottom Center) */}
@@ -232,8 +235,9 @@ export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
             </div>
         </div>
         
-        {/* Right side padding to center character visually */}
-        <div className="hidden xl:flex w-[300px] h-full p-8 flex-col items-end gap-6 z-30 pointer-events-none">
+        {/* Chat History / Quiz Panel (Right side) */}
+        <div className="hidden xl:flex w-[400px] h-full p-6 pr-0 pt-0 flex-col relative z-30 pointer-events-auto">
+          <ChatHistoryPanel />
         </div>
       </div>
 
