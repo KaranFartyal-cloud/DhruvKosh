@@ -107,17 +107,27 @@ export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
     let replyData: { reply: string; animation?: string; emotion?: string; audio_base64?: string } | null = null;
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 sec timeout
+
       const response = await fetch(`${API_BASE_URL}/api/generated/expedition/1/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, user_type: chatMode })
+        body: JSON.stringify({ message, user_type: chatMode }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         replyData = await response.json();
       }
-    } catch (err) {
-      console.warn("API offline or slow, using built-in Polar Knowledge Engine:", err);
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.warn("API timeout (5s) — switching to built-in Polar Knowledge Engine");
+      } else {
+        console.warn("API offline — using built-in Polar Knowledge Engine:", err);
+      }
     }
 
     // If server returned empty, fallback to rich offline polar knowledge engine
