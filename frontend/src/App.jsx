@@ -4,16 +4,16 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
-import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
-import PublicRoute from './components/PublicRoute';
+import { SpeechProvider } from './contexts/SpeechProvider';
 
 const Repository = React.lazy(() => import('./pages/Repository'));
 const Upload = React.lazy(() => import('./pages/Upload'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Publishing = React.lazy(() => import('./pages/Publishing'));
 const ContentDetail = React.lazy(() => import('./pages/ContentDetail'));
-const Auth = React.lazy(() => import('./pages/Auth'));
+const ExpeditionsList = React.lazy(() => import('./pages/ExpeditionsList'));
+const ExpeditionDetail = React.lazy(() => import('./pages/ExpeditionDetail'));
+const PolarGuide = React.lazy(() => import('./components/PolarGuide'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,8 +29,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <BrowserRouter>
-          <AuthProvider>
+        <SpeechProvider>
+          <BrowserRouter>
             <ErrorBoundary>
               <Suspense fallback={
                 <div className="min-h-screen flex items-center justify-center bg-ncpor-bg">
@@ -38,20 +38,25 @@ function App() {
                 </div>
               }>
                 <Routes>
-                  <Route path="/login" element={<PublicRoute><Auth /></PublicRoute>} />
-                  <Route path="/signup" element={<PublicRoute><Auth /></PublicRoute>} />
-                  <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+                  <Route path="/" element={<Layout />}>
                     <Route index element={<Repository />} />
                     <Route path="upload" element={<Upload />} />
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="publishing" element={<Publishing />} />
                     <Route path="content/:id" element={<ContentDetail />} />
+                    <Route path="expeditions" element={<ExpeditionsList />} />
+                    <Route path="expeditions/:id" element={<ExpeditionDetail />} />
+                    <Route path="polar-guide" element={
+                      <div className="w-full" style={{ height: 'calc(100vh - 64px)' }}>
+                        <PolarGuide onLogout={() => { localStorage.removeItem('token'); window.location.href = '/login'; }} />
+                      </div>
+                    } />
                   </Route>
                 </Routes>
               </Suspense>
             </ErrorBoundary>
-          </AuthProvider>
-        </BrowserRouter>
+          </BrowserRouter>
+        </SpeechProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
