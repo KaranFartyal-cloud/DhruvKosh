@@ -74,6 +74,8 @@ class GeneratedStatus(str, enum.Enum):
 
 class Role(str, enum.Enum):
     admin = "admin"
+    researcher = "researcher"
+    user = "user"
     editor = "editor"
     viewer = "viewer"
     public = "public"
@@ -92,8 +94,18 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False, index=True)
-    role = Column(Enum(Role), nullable=False, default=Role.viewer)
-    password_hash = Column(String, nullable=False)
+    role = Column(Enum(Role), nullable=False, default=Role.user)
+    password_hash = Column(String, nullable=True) # Optional for Google OAuth users
+    
+    # Researcher details
+    institution = Column(String, nullable=True)
+    designation = Column(String, nullable=True)
+    research_area = Column(String, nullable=True)
+    researcher_id = Column(String, nullable=True) # Researcher / Employee ID
+    phone_number = Column(String, nullable=True)
+    is_approved = Column(Boolean, default=False)
+    avatar_url = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 class Expedition(Base):
     __tablename__ = "expeditions"

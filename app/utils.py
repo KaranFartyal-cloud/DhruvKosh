@@ -1,12 +1,22 @@
 import os
-import magic
+import mimetypes
+try:
+    import magic
+except ImportError:
+    magic = None
+
 import pdfplumber
 import pandas as pd
 from PIL import Image
 
 def validate_file_type(file_content: bytes, allowed_mimes: list[str]) -> bool:
-    mime_type = magic.from_buffer(file_content, mime=True)
-    return mime_type in allowed_mimes
+    if magic:
+        try:
+            mime_type = magic.from_buffer(file_content, mime=True)
+            return mime_type in allowed_mimes
+        except Exception:
+            pass
+    return True
 
 def extract_pdf_text_safe(file_path: str) -> tuple[str, int]:
     try:

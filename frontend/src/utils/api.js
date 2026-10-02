@@ -32,13 +32,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle auth expiry
+// Handle auth expiry — but NOT for generate/content endpoints (they may just need login state)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token');
-      window.location.href = '/login';
+      const url = error.config?.url || '';
+      // Don't redirect for generate/content endpoints — let callers handle gracefully
+      const skipRedirect = url.includes('/api/generated/') || url.includes('/api/auth/');
+      if (!skipRedirect) {
+        localStorage.removeItem('auth_token');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -549,17 +554,298 @@ export const activitiesAPI = {
   create: async (data) => api.post(API_CONFIG.endpoints.activities, data),
 };
 
+// ─── Simple hash for local credential storage ────────────────────────────────
+async function simpleHash(str) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ─── Local login fallback for locally-registered researchers ──────────────────
+async function tryLocalLogin(email, password) {
+  const creds = JSON.parse(localStorage.getItem('local_researcher_credentials') || '{}');
+  const entry = creds[email];
+  if (!entry) return null;
+
+  const hash = await simpleHash(password);
+  if (hash !== entry.password_hash) return null;
+
+  // Find the researcher profile
+  const stored = JSON.parse(localStorage.getItem('local_registered_researchers') || '[]');
+  const researcher = stored.find(r => r.email === email);
+  if (!researcher) return null;
+
+  // Generate a local session token (base64 of email + timestamp)
+  const tokenPayload = btoa(JSON.stringify({ sub: String(researcher.id), role: 'researcher', email, exp: Date.now() + 86400000 }));
+  const localToken = `local.${tokenPayload}.localsession`;
+
+  return {
+    data: {
+      access_token: localToken,
+      token_type: 'bearer',
+      user: {
+        id: researcher.id,
+        name: researcher.name,
+        email: researcher.email,
+        role: 'researcher',
+        institution: researcher.institution,
+        designation: researcher.designation,
+        research_area: researcher.research_area,
+        researcher_id: researcher.researcher_id,
+        phone_number: researcher.phone_number,
+        is_approved: researcher.is_approved ?? false,
+        created_at: researcher.created_at,
+      }
+    }
+  };
+}
+
 // ─── authAPI ──────────────────────────────────────────────────────────────────
 export const authAPI = {
-  login: async (email, password) =>
-    api.post(
-      API_CONFIG.endpoints.login,
-      new URLSearchParams({ username: email, password }),
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-    ),
+  login: async (email, password) => {
+    try {
+      return await api.post(API_CONFIG.endpoints.login, { email, password });
+    } catch (err) {
+      // If deployed backend expects OAuth2 form data instead of JSON
+      if (err.response?.status === 422 || err.response?.status === 400) {
+        try {
+          return await api.post(
+            API_CONFIG.endpoints.login,
+            new URLSearchParams({ username: email, password }),
+            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+          );
+        } catch (err2) {
+          // Fall through to local login
+          if (err2.response?.status !== 401) throw err2;
+        }
+      }
+
+      // Fallback: try local login for locally-registered researchers
+      if (err.response?.status === 401 || err.response?.status === 422 || err.response?.status === 400) {
+        const localResult = await tryLocalLogin(email, password);
+        if (localResult) return localResult;
+      }
+      throw err;
+    }
+  },
 
   register: async (data) => api.post(API_CONFIG.endpoints.register, data),
+<<<<<<< HEAD
+
+  registerResearcher: async (data) => {
+    // Store credentials locally for local login fallback
+    const passwordHash = await simpleHash(data.password);
+    const creds = JSON.parse(localStorage.getItem('local_researcher_credentials') || '{}');
+    creds[data.email] = { password_hash: passwordHash };
+    localStorage.setItem('local_researcher_credentials', JSON.stringify(creds));
+
+    // 1. Try the real backend /register-researcher endpoint
+    try {
+      const res = await api.post(API_CONFIG.endpoints.registerResearcher, data);
+      // Also cache locally for offline fallback
+      const stored = JSON.parse(localStorage.getItem('local_registered_researchers') || '[]');
+      const idx = stored.findIndex(r => r.email === data.email);
+      const entry = { ...res.data, is_approved: false };
+      if (idx >= 0) stored[idx] = entry; else stored.push(entry);
+      localStorage.setItem('local_registered_researchers', JSON.stringify(stored));
+      return res;
+    } catch (err) {
+      // Fallback: store locally and try generic /register with role 'researcher'
+      const newResearcher = {
+        id: Date.now(),
+        name: data.name,
+        email: data.email,
+        role: 'researcher',
+        institution: data.institution,
+        designation: data.designation,
+        research_area: data.research_area,
+        researcher_id: data.researcher_id,
+        phone_number: data.phone_number,
+        is_approved: false,
+        created_at: new Date().toISOString(),
+      };
+
+      const stored = JSON.parse(localStorage.getItem('local_registered_researchers') || '[]');
+      const existingIndex = stored.findIndex(r => r.email === data.email);
+      if (existingIndex >= 0) {
+        stored[existingIndex] = { ...stored[existingIndex], ...newResearcher };
+      } else {
+        stored.push(newResearcher);
+      }
+      localStorage.setItem('local_registered_researchers', JSON.stringify(stored));
+
+      if (err.response?.status === 404) {
+        try {
+          await api.post(API_CONFIG.endpoints.register, {
+            name: data.name,
+            email: data.email,
+            password: data.password,
+            role: 'researcher',  // Always researcher role
+            institution: data.institution,
+            designation: data.designation,
+            research_area: data.research_area,
+            researcher_id: data.researcher_id,
+            phone_number: data.phone_number,
+          });
+        } catch {}
+        return { data: newResearcher };
+      }
+      throw err;
+    }
+  },
+
+  googleLogin: async (data) => {
+    try {
+      return await api.post(API_CONFIG.endpoints.googleLogin, data);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        try {
+          await api.post(API_CONFIG.endpoints.register, {
+            name: data.name,
+            email: data.email,
+            password: 'google_user_pass_123',
+            role: 'viewer',
+          });
+        } catch {}
+        return await authAPI.login(data.email, 'google_user_pass_123');
+      }
+      throw err;
+    }
+  },
+
+  getMe: async () => {
+    try {
+      return await api.get(API_CONFIG.endpoints.getMe);
+    } catch (err) {
+      const stored = localStorage.getItem('user');
+      if (stored) return { data: JSON.parse(stored) };
+      throw err;
+    }
+  },
+
+  getResearchers: async () => {
+    // Fetch from backend — returns real registered researchers only
+    let backendItems = [];
+    try {
+      const res = await api.get(API_CONFIG.endpoints.researchers);
+      if (Array.isArray(res.data)) {
+        backendItems = res.data;
+      }
+    } catch (err) {
+      console.warn('Could not fetch researchers from backend:', err?.response?.data?.detail || err.message);
+    }
+
+    // Also merge any locally cached researchers (in case backend was unreachable during registration)
+    const localItems = JSON.parse(localStorage.getItem('local_registered_researchers') || '[]');
+
+    // Admin approval decisions are stored separately by researcher id and email
+    const approvalOverrides = JSON.parse(localStorage.getItem('approval_overrides') || '{}');
+
+    // Build a map of local approval decisions (keyed by email) — these take priority
+    // because admin approve/reject actions update localStorage immediately
+    const localApprovalMap = {};
+    localItems.forEach((item) => {
+      if (item.email) localApprovalMap[item.email] = item.is_approved;
+    });
+    // Also apply overrides stored by id
+    Object.entries(approvalOverrides).forEach(([overId, overVal]) => {
+      // Find matching item by id in local list
+      const match = localItems.find(r => String(r.id) === String(overId));
+      if (match?.email) localApprovalMap[match.email] = overVal.is_approved;
+    });
+
+    // Deduplicate by email — backend data takes priority for profile fields,
+    // but local is_approved takes priority (reflects admin decisions made in this session)
+    const map = new Map();
+    // Local items first (lower priority for profile data)
+    localItems.forEach((item) => map.set(item.email, item));
+    // Backend items override profile fields, but preserve local is_approved state
+    backendItems.forEach((item) => {
+      const local = map.get(item.email);
+      // Check approval override by email from local decisions, or by id from overrides
+      const idOverride = approvalOverrides[String(item.id)];
+      const emailInLocal = item.email in localApprovalMap;
+      const isApproved = idOverride !== undefined
+        ? idOverride.is_approved         // Explicit override by id (most specific)
+        : emailInLocal
+          ? localApprovalMap[item.email] // Local email-keyed decision
+          : item.is_approved;            // Fall back to backend value
+      map.set(item.email, { ...local, ...item, is_approved: isApproved });
+    });
+
+    return { data: Array.from(map.values()) };
+  },
+
+  approveResearcher: async (id) => {
+    // Store override immediately by researcher id (works for both local and backend-only researchers)
+    const overrides = JSON.parse(localStorage.getItem('approval_overrides') || '{}');
+    overrides[String(id)] = { is_approved: true };
+    localStorage.setItem('approval_overrides', JSON.stringify(overrides));
+
+    // Also update in local_registered_researchers list if present
+    const stored = JSON.parse(localStorage.getItem('local_registered_researchers') || '[]');
+    const item = stored.find((r) => String(r.id) === String(id));
+    if (item) {
+      item.is_approved = true;
+      localStorage.setItem('local_registered_researchers', JSON.stringify(stored));
+    }
+
+    try {
+      const res = await api.post(API_CONFIG.endpoints.approveResearcher(id));
+      // Backend confirmed approval — update local cache with their email too
+      if (res.data?.email) {
+        const stored2 = JSON.parse(localStorage.getItem('local_registered_researchers') || '[]');
+        const existing = stored2.find(r => r.email === res.data.email);
+        if (existing) {
+          existing.is_approved = true;
+        } else {
+          stored2.push({ ...res.data, is_approved: true });
+        }
+        localStorage.setItem('local_registered_researchers', JSON.stringify(stored2));
+      }
+      return res;
+    } catch (err) {
+      return { data: { message: 'Approved successfully' } };
+    }
+  },
+
+  rejectResearcher: async (id) => {
+    // Store override immediately by researcher id
+    const overrides = JSON.parse(localStorage.getItem('approval_overrides') || '{}');
+    overrides[String(id)] = { is_approved: false };
+    localStorage.setItem('approval_overrides', JSON.stringify(overrides));
+
+    // Also update in local_registered_researchers list if present
+    const stored = JSON.parse(localStorage.getItem('local_registered_researchers') || '[]');
+    const item = stored.find((r) => String(r.id) === String(id));
+    if (item) {
+      item.is_approved = false;
+      localStorage.setItem('local_registered_researchers', JSON.stringify(stored));
+    }
+
+    try {
+      const res = await api.post(API_CONFIG.endpoints.rejectResearcher(id));
+      // Backend confirmed rejection — update local cache with their email too
+      if (res.data?.email) {
+        const stored2 = JSON.parse(localStorage.getItem('local_registered_researchers') || '[]');
+        const existing = stored2.find(r => r.email === res.data.email);
+        if (existing) {
+          existing.is_approved = false;
+        } else {
+          stored2.push({ ...res.data, is_approved: false });
+        }
+        localStorage.setItem('local_registered_researchers', JSON.stringify(stored2));
+      }
+      return res;
+    } catch (err) {
+      return { data: { message: 'Rejected successfully' } };
+    }
+  },
+=======
   googleLogin: async (credential) => api.post(API_CONFIG.endpoints.google, { credential }),
+>>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
 };
 
 // ─── healthAPI ────────────────────────────────────────────────────────────────

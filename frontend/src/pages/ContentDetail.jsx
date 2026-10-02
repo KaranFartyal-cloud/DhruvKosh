@@ -34,19 +34,31 @@ const ContentDetail = () => {
   
   const handleGenerate = async () => {
     setGenerating(true);
+    setError(null);
     try {
-      const response = await contentAPI.generatePosts(id);
+      // Wrap with a 90-second timeout to prevent infinite spinning
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), 90000)
+      );
+      const response = await Promise.race([contentAPI.generatePosts(id), timeoutPromise]);
       setContent(prev => ({
         ...prev,
         generated_posts: response.data
       }));
     } catch (err) {
-      setError('Failed to generate posts. Please try again.');
+      if (err.message === 'TIMEOUT') {
+        setError('AI generation timed out. The backend may be starting up (cold start). Please wait a moment and try again.');
+      } else if (err.response?.status === 401 || err.response?.status === 403) {
+        setError('You need to be logged in as an Admin or approved Researcher to generate content.');
+      } else {
+        setError('Failed to generate posts. The AI backend may be temporarily unavailable. Please try again.');
+      }
       console.error('Error generating posts:', err);
     } finally {
       setGenerating(false);
     }
   };
+
   
   const handlePostEdit = (postId, newText) => {
     setEditingPosts(prev => ({
@@ -197,7 +209,7 @@ const ContentDetail = () => {
     );
   }
   
-  if (error) {
+  if (error && !content) {
     return (
       <div className="bg-red-900/20 border border-red-500/50 text-red-200 px-4 py-3 rounded max-w-7xl mx-auto mt-8 font-medium">
         {error}
@@ -297,7 +309,16 @@ const ContentDetail = () => {
             )}
           </button>
         </div>
-        
+
+        {/* Inline error banner (for generate errors, not initial load errors) */}
+        {error && content && (
+          <div className="flex items-start gap-3 bg-rose-500/10 border border-rose-500/30 text-rose-300 px-4 py-3 rounded-xl mb-4 text-sm">
+            <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span className="flex-1">{error}</span>
+            <button onClick={() => setError(null)} className="text-rose-400 hover:text-rose-200 shrink-0">✕</button>
+          </div>
+        )}
+
         {content.description && (
           <p className="text-ncpor-secondary text-lg leading-relaxed max-w-4xl mb-6">{content.description}</p>
         )}

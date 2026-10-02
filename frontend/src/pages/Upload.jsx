@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { contentAPI } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 import { renderFirstPageToCanvas, extractPDFText, analyzePDFContent } from '../utils/pdfHelper';
 import { useInvalidateLiveStats } from '../hooks/useLiveStats';
 
@@ -111,13 +112,20 @@ const PDFPreviewModal = ({ file, onClose }) => {
 /* ─── Main Upload component ─────────────────────────────────────────────── */
 const Upload = () => {
   const navigate = useNavigate();
+<<<<<<< HEAD
+  const { user, isAdmin, isResearcher, isApprovedResearcher } = useAuth();
+=======
   const invalidateLiveStats = useInvalidateLiveStats();
+>>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
   const fileInputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+  // Block normal users from uploading
+  const canUpload = isAdmin || isResearcher;
 
   // PDF analysis state
   const [pdfFile, setPdfFile] = useState(null);
@@ -258,6 +266,43 @@ const Upload = () => {
   };
 
   const allStepsDone = analysisSteps && Object.values(analysisSteps).every(v => v === 'done');
+
+  // Block normal users from uploading
+  if (!canUpload) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-20 text-center">
+        <div className="bg-ncpor-panel border border-rose-500/30 rounded-2xl p-10 shadow-xl flex flex-col items-center gap-5">
+          <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center">
+            <svg className="w-8 h-8 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10M12 8V6m0 0V4m0 2h2m-2 0H10M4.929 4.929l14.142 14.142M4.929 19.071L19.071 4.929" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-ncpor-primary mb-2">Upload Permission Denied</h2>
+            <p className="text-ncpor-secondary text-sm leading-relaxed">
+              {user ? (
+                <>
+                  Your account (<span className="text-ncpor-accent font-medium">{user.email}</span>) does not have upload permissions.
+                  <br /><br />
+                  Only <strong className="text-ncpor-primary">Admins</strong> and <strong className="text-ncpor-primary">Researchers</strong> can upload content to the repository.
+                  <br /><br />
+                  If you are a researcher, please <Link to="/login" className="text-ncpor-accent underline hover:text-ncpor-accentBright">register as a Researcher</Link> to gain upload access.
+                </>
+              ) : (
+                <>You must be logged in as an Admin or Researcher to upload content.</>
+              )}
+            </p>
+          </div>
+          <Link
+            to="/"
+            className="px-6 py-2.5 bg-ncpor-accent/10 border border-ncpor-accent/30 text-ncpor-accent rounded-lg text-sm font-semibold hover:bg-ncpor-accent hover:text-ncpor-bg transition-all"
+          >
+            ← Back to Repository
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

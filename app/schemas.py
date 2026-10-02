@@ -71,6 +71,8 @@ class GeneratedStatus(str, Enum):
 
 class Role(str, Enum):
     admin = "admin"
+    researcher = "researcher"
+    user = "user"
     editor = "editor"
     viewer = "viewer"
     public = "public"
@@ -94,13 +96,41 @@ class DatasetPreview(BaseModel):
 class UserBase(BaseModel):
     name: str
     email: str
-    role: Role
+    role: Role = Role.user
+    institution: Optional[str] = None
+    designation: Optional[str] = None
+    research_area: Optional[str] = None
+    researcher_id: Optional[str] = None
+    phone_number: Optional[str] = None
+    is_approved: Optional[bool] = False
+    avatar_url: Optional[str] = None
 
 class UserCreate(UserBase):
+    password: Optional[str] = None
+
+class ResearcherRegister(BaseModel):
+    name: str
+    email: str
     password: str
+    confirm_password: str
+    institution: str
+    designation: str
+    research_area: str
+    researcher_id: str
+    phone_number: str
+
+class GoogleAuthRequest(BaseModel):
+    email: str
+    name: str
+    avatar_url: Optional[str] = None
+    google_id: Optional[str] = None
+
+class UserApprovalUpdate(BaseModel):
+    is_approved: bool
 
 class User(UserBase):
     id: int
+    created_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True

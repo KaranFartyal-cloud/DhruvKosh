@@ -22,12 +22,14 @@ const ExpeditionsList = () => {
     queryFn: api.getExpeditions
   });
 
+  const expList = Array.isArray(expeditions) ? expeditions : (expeditions?.items || []);
+
   const mutation = useMutation({
     mutationFn: api.createExpedition,
     onSuccess: (data) => {
       queryClient.invalidateQueries(['expeditions']);
       setShowModal(false);
-      navigate(`/admin/expeditions/${data.id}`);
+      navigate(`/expeditions/${data.id}`);
     },
     onError: (err) => {
       console.error(err);
@@ -45,7 +47,7 @@ const ExpeditionsList = () => {
   };
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-display text-ncpor-primary">Expeditions</h1>
         <button onClick={() => setShowModal(true)} className="bg-ncpor-accent hover:bg-ncpor-accent/90 text-ncpor-bg px-4 py-2 rounded-lg shadow font-bold flex items-center space-x-2 transition-colors">
@@ -78,10 +80,10 @@ const ExpeditionsList = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-ncpor-border">
-              {expeditions?.map(exp => (
+              {expList?.map(exp => (
                 <tr key={exp.id} className="hover:bg-ncpor-bgSecondary/50 transition-colors">
                   <td className="p-4">
-                    <Link to={`/admin/expeditions/${exp.id}`} className="font-semibold text-ncpor-accent hover:underline">
+                    <Link to={`/expeditions/${exp.id}`} className="font-semibold text-ncpor-accent hover:underline">
                       {exp.name}
                     </Link>
                   </td>
