@@ -18,7 +18,10 @@ router = APIRouter()
 
 # Request models
 class GoogleAuthRequest(BaseModel):
-    credential: str
+    credential: Optional[str] = None
+    email: Optional[str] = None
+    name: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 # Security
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
