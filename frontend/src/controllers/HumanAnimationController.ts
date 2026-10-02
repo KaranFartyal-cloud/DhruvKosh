@@ -3,35 +3,118 @@ import { VRM, VRMExpressionPresetName } from '@pixiv/three-vrm';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { mixamoFbx2motion } from '../animation/mixamoFbx2motion';
 
+// ──────────────────────────────────────────────────────────────────────────
+// FULL ANIMATION LIBRARY  (56 files including all maveai animations)
+// ──────────────────────────────────────────────────────────────────────────
 const ANIMATION_FILES: Record<string, string> = {
-  'IDLE': '/animations/idle.fbx',
-  'FEMINEIDLE': '/animations/idle.fbx',
-  'BREATHINGIDLE': '/animations/breathing.fbx',
-  'BREATHING': '/animations/breathing.fbx',
-  'THINKING': '/animations/thinking.fbx',
-  'THINK': '/animations/thinking.fbx',
-  'SPEAKING': '/animations/talking.fbx',
-  'TALKING': '/animations/talking.fbx',
-  'SPEAK': '/animations/talking.fbx',
-  'EXPLAIN': '/animations/talking.fbx',
-  'ANGRY': '/animations/angrypoint.fbx',
-  'POINT': '/animations/angrypoint.fbx',
-  'THANKFUL': '/animations/thankful.fbx',
-  'THANKS': '/animations/thankful.fbx',
-  'VICTORY': '/animations/victory.fbx',
-  'SUCCESS': '/animations/victory.fbx',
-  'CHEER': '/animations/victory.fbx',
-  'HAPPY': '/animations/victory.fbx',
-  'SAD': '/animations/sadidle.fbx',
-  'SORRY': '/animations/sadidle.fbx',
-  'WAVE': '/animations/wave.fbx',
-  'GREETING': '/animations/wave.fbx',
-  'HELLO': '/animations/wave.fbx',
-  'WALKING': '/animations/walking.fbx',
-  'WALK': '/animations/walking.fbx',
-  'DEFEAT': '/animations/defeat.fbx',
-  'ERROR': '/animations/defeat.fbx'
+  // ── IDLE / REST ────────────────────────────────────────────────────────
+  'IDLE':             '/animations/femineidle.fbx',
+  'FEMINEIDLE':       '/animations/femineidle.fbx',
+  'BREATHINGIDLE':    '/animations/breathingidle.fbx',
+  'BREATHING':        '/animations/breathingidle.fbx',
+  'REST':             '/animations/femineidle.fbx',
+  'LAYING':           '/animations/laying.fbx',
+  'WEIGHTSHIFT':      '/animations/weightshift.fbx',
+
+  // ── TALKING / EXPLAINING ───────────────────────────────────────────────
+  'SPEAKING':         '/animations/talking.fbx',
+  'TALKING':          '/animations/talking.fbx',
+  'SPEAK':            '/animations/talking.fbx',
+  'EXPLAIN':          '/animations/talking.fbx',
+  'POINTING':         '/animations/angrypoint.fbx',
+  'POINT':            '/animations/angrypoint.fbx',
+  'DISMISSING':       '/animations/dismissinggesture.fbx',
+  'HANDGESTURE':      '/animations/happyhandgesture.fbx',
+  'GESTURING':        '/animations/happyhandgesture.fbx',
+
+  // ── GREETING / POSITIVE ───────────────────────────────────────────────
+  'WAVE':             '/animations/waving.fbx',
+  'WAVING':           '/animations/waving.fbx',
+  'GREETING':         '/animations/waving.fbx',
+  'HELLO':            '/animations/waving.fbx',
+  'ACKNOWLEDGING':    '/animations/acknowledging.fbx',
+  'NOD':              '/animations/headnodyes.fbx',
+  'HEADNOD':          '/animations/headnodyes.fbx',
+  'HARDNOD':          '/animations/hardheadnod.fbx',
+  'LENGTHYDNOD':      '/animations/lengthyheadnod.fbx',
+
+  // ── HAPPY / CELEBRATION ───────────────────────────────────────────────
+  'VICTORY':          '/animations/femalevictory.fbx',
+  'SUCCESS':          '/animations/femalevictory.fbx',
+  'CHEER':            '/animations/cheering.fbx',
+  'CHEERING':         '/animations/cheering.fbx',
+  'CLAPPING':         '/animations/clapping.fbx',
+  'CLAP':             '/animations/clapping.fbx',
+  'HAPPY':            '/animations/happy.fbx',
+  'JOY':              '/animations/joy.fbx',
+  'EXCITED':          '/animations/excited.fbx',
+  'LAUGHING':         '/animations/laughing.fbx',
+  'LAUGH':            '/animations/laughing.fbx',
+
+  // ── QUIZ CORRECT / WRONG (used by kids quiz) ──────────────────────────
+  'QUIZ_CORRECT':     '/animations/femalevictory.fbx',
+  'CORRECT':          '/animations/femalevictory.fbx',
+  'QUIZ_WRONG':       '/animations/shakingheadno.fbx',
+  'WRONG':            '/animations/shakingheadno.fbx',
+  'TRYAGAIN':         '/animations/thoughtfulheadshake.fbx',
+
+  // ── THINKING / FOCUS ──────────────────────────────────────────────────
+  'THINKING':         '/animations/femalethinking.fbx',
+  'THINK':            '/animations/femalethinking.fbx',
+  'FOCUS':            '/animations/focus.fbx',
+  'TYPING':           '/animations/typing.fbx',
+
+  // ── SAD / NEGATIVE ────────────────────────────────────────────────────
+  'SAD':              '/animations/sadanimation.fbx',
+  'SORRY':            '/animations/sadanimation.fbx',
+  'DEFEAT':           '/animations/saddefeat.fbx',
+  'ERROR':            '/animations/saddefeat.fbx',
+  'SADIDLE':          '/animations/sadidle.fbx',
+
+  // ── DISMISSIVE / ANNOYED ──────────────────────────────────────────────
+  'ANGRY':            '/animations/femaleangry.fbx',
+  'ANNOYED':          '/animations/annoyedheadshake.fbx',
+  'SHAKING':          '/animations/shakingheadno.fbx',
+  'SHAKENO':          '/animations/shakingheadno.fbx',
+  'SARCASTIC':        '/animations/sarcasticheadnod.fbx',
+
+  // ── MISC / EXPRESSIVE ─────────────────────────────────────────────────
+  'THANKFUL':         '/animations/thankfulwomen.fbx',
+  'THANKS':           '/animations/thankfulwomen.fbx',
+  'SURPRISED':        '/animations/surprised.fbx',
+  'WOW':              '/animations/surprised.fbx',
+  'YAWN':             '/animations/yawn.fbx',
+  'RELIEVE':          '/animations/relievedsigh.fbx',
+  'SIGH':             '/animations/relievedsigh.fbx',
+  'LOOKAROUND':       '/animations/lookaround.fbx',
+  'LOOK':             '/animations/lookaround.fbx',
+  'LOOKAWAY':         '/animations/lookawaygesture.fbx',
+  'LOOKINGSIDEWAYS':  '/animations/lookingsideways.fbx',
+  'NERVOUS':          '/animations/nervouslylookaround.fbx',
+  'BASHFUL':          '/animations/Bashful.fbx',
+  'SHY':              '/animations/Bashful.fbx',
+  'COVERMOUTH':       '/animations/coveringmouth.fbx',
+  'BEINGCOCKY':       '/animations/beingcocky.fbx',
+  'STEPBACK':         '/animations/steppingback.fbx',
+  'STEPFORWARD':      '/animations/steppingforward.fbx',
+
+  // ── MOVEMENT ──────────────────────────────────────────────────────────
+  'WALKING':          '/animations/walking.fbx',
+  'WALK':             '/animations/walking.fbx',
+
+  // ── DANCE ─────────────────────────────────────────────────────────────
+  'DANCE':            '/animations/standingdance.fbx',
+  'STANDINGDANCE':    '/animations/standingdance.fbx',
 };
+
+// Animations that should loop continuously (vs. play-once)
+const LOOPING_ANIMATIONS = new Set([
+  'IDLE','FEMINEIDLE','BREATHINGIDLE','BREATHING','REST',
+  'SPEAKING','TALKING','SPEAK','EXPLAIN',
+  'THINKING','THINK','FOCUS','TYPING',
+  'WALKING','WALK','LAYING','WEIGHTSHIFT',
+  'LOOKAROUND','LOOK','NERVOUS',
+]);
 
 export class HumanAnimationController {
   public vrm: VRM;

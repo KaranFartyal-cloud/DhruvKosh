@@ -358,14 +358,49 @@ async def chat_with_expedition(
     if groq_api_key:
         try:
             client = Groq(api_key=groq_api_key)
+            
+            if request.user_type == "kid":
+                mode_instructions = (
+                    f"### MODE: KID & QUIZ\n"
+                    f"- You are talking to a young student or child.\n"
+                    f"- Be super energetic, fun, and use simple, exciting language.\n"
+                    f"- Actively give them fun, short mini-quizzes about polar science, penguins, or ice.\n"
+                    f"- If they get a quiz right, celebrate wildly! If they get it wrong, encourage them.\n"
+                    f"- Keep your answers very short (1-2 sentences max).\n"
+                )
+            elif request.user_type == "researcher":
+                mode_instructions = (
+                    f"### MODE: RESEARCHER\n"
+                    f"- You are talking to a fellow scientist or researcher.\n"
+                    f"- Be highly professional, analytical, and precise.\n"
+                    f"- Focus strictly on the data, methodology, and scientific findings from the provided expedition context.\n"
+                    f"- Do not engage in casual small talk. Use advanced terminology regarding glaciology, climatology, etc.\n"
+                )
+            else:
+                mode_instructions = (
+                    f"### MODE: NORMAL COMPANION\n"
+                    f"- You are a warm, highly empathetic, and relatable friend. People should genuinely enjoy talking to you.\n"
+                    f"- You can have normal, casual conversations (e.g., how you are feeling, daily life).\n"
+                    f"- NEVER force polar science facts into a conversation if the user is just saying 'hi' or making small talk.\n"
+                    f"- BOUNDARY: While you are a companion, your core identity is a Polar Guide. If the user engages in endless off-topic chatter, inappropriate talk, or wastes time, gracefully and politely steer the conversation back to polar science or the expedition. Do not tolerate endless nonsense.\n"
+                    f"- NEVER lecture or info-dump. Keep responses organic and conversational (1-3 sentences max).\n"
+                )
+
             system_prompt = (
-                f"You are Mavis, the 3D AI Polar Research Guide for NCPOR (National Centre for Polar and Ocean Research, India).\n"
-                f"You are speaking directly to a user in mode '{request.user_type}' about {exp_name}.\n"
-                f"Use this expedition context:\n{context[:2500]}\n\n"
-                f"Guidelines:\n"
-                f"- Give a direct, friendly, informative spoken answer in 2 to 3 sentences.\n"
-                f"- Do NOT use markdown symbols, stars, or bullet points.\n"
-                f"- Highlight real Indian Antarctic/Arctic science (Maitri, Bharati, Himadri, ice cores, sea level rise)."
+                f"You are Mavis, an advanced AI companion and the 3D Polar Research Guide for NCPOR (National Centre for Polar and Ocean Research, India).\n\n"
+                f"{mode_instructions}\n"
+                f"### CURRENT CONTEXT\n"
+                f"Expedition context (use ONLY if relevant to the user's question, do not force it): {exp_name}\n"
+                f"Context details:\n{context[:1500]}\n\n"
+                f"### GUIDELINES\n"
+                f"1. Do NOT use markdown symbols, stars, emojis, or bullet points (this text will be spoken via TTS).\n"
+                f"2. You MUST respond in valid JSON format with three exact keys:\n"
+                f"   - 'reply': Your spoken text.\n"
+                f"   - 'animation': The physical action you should perform.\n"
+                f"   - 'emotion': Your facial expression.\n\n"
+                f"### VALID OUTPUT OPTIONS\n"
+                f"Emotions: HAPPY, FRIENDLY, EXCITED, SAD, SORRY, ANGRY, SURPRISED, CALM, RELAXED, THINKING, CONFUSED, SERIOUS, SUPPORTIVE, NEUTRAL.\n"
+                f"Animations: IDLE, BREATHING, SPEAKING, EXPLAIN, POINT, DISMISSING, HANDGESTURE, WAVE, NOD, HARDNOD, VICTORY, CHEER, CLAP, LAUGH, QUIZ_CORRECT, QUIZ_WRONG, THINKING, TYPING, SAD, DEFEAT, ANGRY, ANNOYED, SHAKENO, SARCASTIC, THANKFUL, SURPRISED, YAWN, SIGH, LOOKAROUND, LOOKAWAY, NERVOUS, SHY, COVERMOUTH, BEINGCOCKY, STEPBACK, DANCE."
             )
             completion = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
@@ -373,30 +408,25 @@ async def chat_with_expedition(
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": request.message}
                 ],
-                temperature=0.6,
-                max_tokens=220
+                temperature=0.7,
+                max_tokens=250,
+                response_format={"type": "json_object"}
             )
-            reply = completion.choices[0].message.content.strip()
+            
+            import json
+            response_json = json.loads(completion.choices[0].message.content.strip())
+            reply = response_json.get("reply", "I'm having a little trouble thinking right now.")
+            action = response_json.get("animation", "SPEAKING")
+            emotion = response_json.get("emotion", "FRIENDLY")
+            
         except Exception as e:
-            reply = f"In {exp_name}, our scientists at NCPOR are monitoring ice shelves, basal melting, and climate trends. Regarding your question: polar ice sheets and ocean currents are key indicators of global changes."
+            print(f"Groq API Error: {e}")
+            reply = "I'm sorry, I seem to have lost my connection to the research base. Can we talk again in a moment?"
+            action = "SADIDLE"
+            emotion = "SAD"
     else:
-        reply = f"Hello! As your NCPOR Polar Science Guide, I can share that {exp_name} collected vital atmospheric and glaciological data."
-
-    text_lower = reply.lower()
-    if any(w in text_lower for w in ["great", "congratulations", "success", "wonderful", "amazing", "victory"]):
-        action = "VICTORY"
-        emotion = "HAPPY"
-    elif any(w in text_lower for w in ["thinning", "melting", "warning", "danger", "loss", "retreat", "concern"]):
-        action = "SPEAKING"
-        emotion = "SERIOUS"
-    elif any(w in text_lower for w in ["hello", "hi", "welcome", "hey", "namaste"]):
+        reply = f"Hello! As your NCPOR Polar Science Guide, I can share that {exp_name} collected vital data."
         action = "WAVE"
-        emotion = "FRIENDLY"
-    elif any(w in text_lower for w in ["analyzing", "measuring", "calculate", "researching", "data", "how", "why"]):
-        action = "THINKING"
-        emotion = "THINKING"
-    else:
-        action = "SPEAKING"
         emotion = "FRIENDLY"
 
     return {
