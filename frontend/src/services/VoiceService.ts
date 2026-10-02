@@ -61,10 +61,13 @@ export class VoiceService {
     
     // 👩🏼‍🦰 AGGRESSIVE FEMALE VOICE SEARCH
     const femaleVoice = this.voices.find(v => 
-        v.name.includes("Zira") ||           // Windows (High Quality)
-        v.name.includes("Google US English") || // Chrome (High Quality)
-        v.name.includes("Samantha") ||       // MacOS
-        v.name.includes("Eva") ||            // Windows
+        v.name.includes("Aria Online (Natural)") ||
+        v.name.includes("Jenny Online (Natural)") ||
+        v.name.includes("Google US English") ||
+        v.name.includes("Google UK English Female") ||
+        v.name.includes("Samantha") ||
+        v.name.includes("Zira") ||
+        v.name.includes("Eva") ||
         v.name.includes("Female")
     );
 
