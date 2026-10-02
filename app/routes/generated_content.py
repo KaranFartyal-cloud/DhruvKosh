@@ -409,23 +409,45 @@ async def chat_with_expedition(
                     {"role": "user", "content": request.message}
                 ],
                 temperature=0.7,
-                max_tokens=250,
-                response_format={"type": "json_object"}
+                max_tokens=300
             )
-            
-            import json
-            response_json = json.loads(completion.choices[0].message.content.strip())
-            reply = response_json.get("reply", "I'm having a little trouble thinking right now.")
-            action = response_json.get("animation", "SPEAKING")
-            emotion = response_json.get("emotion", "FRIENDLY")
-            
+
+            import json, re
+            raw = completion.choices[0].message.content.strip()
+
+            # 1. Try direct JSON parse
+            try:
+                parsed = json.loads(raw)
+                reply  = parsed.get("reply",     "").strip()
+                action = parsed.get("animation", "SPEAKING").strip().upper()
+                emotion = parsed.get("emotion",  "FRIENDLY").strip().upper()
+            except json.JSONDecodeError:
+                # 2. Try regex extract JSON block from mixed text
+                json_match = re.search(r'\{.*?\}', raw, re.DOTALL)
+                if json_match:
+                    try:
+                        parsed = json.loads(json_match.group())
+                        reply  = parsed.get("reply",     "").strip()
+                        action = parsed.get("animation", "SPEAKING").strip().upper()
+                        emotion = parsed.get("emotion",  "FRIENDLY").strip().upper()
+                    except Exception:
+                        reply = raw; action = "SPEAKING"; emotion = "FRIENDLY"
+                else:
+                    # 3. Plain text fallback — use the raw response as reply
+                    reply = raw; action = "SPEAKING"; emotion = "FRIENDLY"
+
+            # Sanity check
+            if not reply:
+                reply = "I was thinking about that. Ask me anything about polar science!"
+                action = "THINKING"; emotion = "NEUTRAL"
+
         except Exception as e:
-            print(f"Groq API Error: {e}")
-            reply = "I'm sorry, I seem to have lost my connection to the research base. Can we talk again in a moment?"
+            print(f"[Mavis/Groq ERROR] {type(e).__name__}: {e}")
+            reply = "Hmm, I'm having a little trouble right now. But I'm here! Ask me anything."
             action = "SADIDLE"
             emotion = "SAD"
     else:
-        reply = f"Hello! As your NCPOR Polar Science Guide, I can share that {exp_name} collected vital data."
+        reply = f"Hello! I am Mavis, your Polar Research Guide for NCPOR. Ask me anything about polar science!"
         action = "WAVE"
         emotion = "FRIENDLY"
 
@@ -435,3 +457,4 @@ async def chat_with_expedition(
         "animation": action,
         "emotion": emotion
     }
+
