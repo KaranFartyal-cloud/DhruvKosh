@@ -81,20 +81,10 @@ export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
   const { addChatMessage, mascot } = useAppStore();
   const { startListening, stopListening, isListening } = useSpeech();
 
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  
   // Menu and Mode state
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [chatMode, setChatMode] = useState<'student' | 'kid' | 'researcher'>('student'); 
   // 'student' = Chat, 'kid' = Questions
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
 
   const handleSendMessage = async (message: string) => {
     if (!message.trim()) return;
@@ -157,23 +147,11 @@ export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
   };
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-[#030305] flex text-white font-sans md:cursor-none">
-      
-      {/* 📍 CUSTOM CURSOR GLOW - Hidden on Mobile */}
-      <motion.div 
-        className="fixed top-0 left-0 w-6 h-6 bg-white rounded-full mix-blend-difference z-[9999] pointer-events-none blur-[2px] hidden md:block"
-        animate={{ x: mousePos.x - 12, y: mousePos.y - 12 }}
-        transition={{ type: "spring", damping: 30, stiffness: 400, mass: 0.2 }}
-      />
+    <div className="relative w-full h-full overflow-hidden bg-[#030305] flex text-white font-sans">
 
       {/* 🌌 AMBIENT BACKGROUND */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-[#030305]" />
-        <motion.div 
-          className="absolute w-[1000px] h-[1000px] bg-indigo-600/5 rounded-full blur-2xl md:blur-[150px] hidden md:block"
-          animate={{ x: mousePos.x - 500, y: mousePos.y - 500 }}
-          transition={{ type: "spring", damping: 50, stiffness: 20 }}
-        />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:60px_60px]"
           style={{ maskImage: 'radial-gradient(ellipse 80% 50% at 50% 100%, black 70%, transparent 100%)' }} 
         />
