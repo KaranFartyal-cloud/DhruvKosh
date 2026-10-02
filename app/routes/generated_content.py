@@ -417,7 +417,7 @@ async def chat_with_expedition(
                 model="openai/gpt-oss-120b",
                 messages=msgs,
                 temperature=0.7,
-                max_tokens=300
+                max_tokens=500
             )
 
             import json, re
@@ -432,17 +432,27 @@ async def chat_with_expedition(
             except json.JSONDecodeError:
                 # 2. Try regex extract JSON block from mixed text
                 json_match = re.search(r'\{.*?\}', raw, re.DOTALL)
+                success = False
                 if json_match:
                     try:
                         parsed = json.loads(json_match.group())
                         reply  = parsed.get("reply",     "").strip()
                         action = parsed.get("animation", "SPEAKING").strip().upper()
                         emotion = parsed.get("emotion",  "FRIENDLY").strip().upper()
+                        success = True
                     except Exception:
-                        reply = raw; action = "SPEAKING"; emotion = "FRIENDLY"
-                else:
-                    # 3. Plain text fallback — use the raw response as reply
-                    reply = raw; action = "SPEAKING"; emotion = "FRIENDLY"
+                        pass
+                
+                if not success:
+                    # 3. It's broken/truncated JSON. Try to extract just the reply text.
+                    reply_match = re.search(r'"reply"\s*:\s*"([^"]*)', raw)
+                    if reply_match:
+                        reply = reply_match.group(1).strip()
+                    else:
+                        reply = raw.replace('{"reply":', '').replace('"', '').replace('{', '').replace('}', '').strip()
+                    
+                    action = "SPEAKING"
+                    emotion = "FRIENDLY"
 
             # Sanity check
             if not reply:
