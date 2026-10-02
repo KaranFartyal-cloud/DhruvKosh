@@ -92,7 +92,13 @@ function VRMLoaderComponent({ vrmUrl, mode = 'dashboard', onControllerReady }: V
     );
     
     setVrm(vrmInstance);
-    return () => { scene.remove(vrmInstance.scene); };
+    return () => {
+      try {
+        if (scene && vrmInstance?.scene) {
+          scene.remove(vrmInstance.scene);
+        }
+      } catch (_) {}
+    };
   }, [gltf]);
 
   // ✅ ISOLATED LOGIC ENGINE
@@ -118,22 +124,22 @@ function VRMLoaderComponent({ vrmUrl, mode = 'dashboard', onControllerReady }: V
         } else if (replyText.length > 40) {
           controllerRef.current.play('SPEAKING', true);
         } else {
-          controllerRef.current.play('IDLE'); // ✅ IDLE always works here
+          controllerRef.current.play('IDLE');
         }
       } 
       else {
-        controllerRef.current.play('IDLE'); // ✅ Normal IDLE for Chat
+        controllerRef.current.play('IDLE');
       }
     } 
-    // 🛑 SCREEN MODE: No automatic IDLE, let the screen control it
     else if (mode === 'screen') {
       // Manual control
     }
-  }, [isSpeaking, replyText, isChatLoading, mode]); // ✅ Mode added to deps
+  }, [isSpeaking, replyText, isChatLoading, mode]);
 
-  useFrame((state, delta) => {
+  useFrame((_state, delta) => {
     if (vrm && controllerRef.current) {
-      controllerRef.current.update(Math.min(delta, 0.033));
+      const safeDelta = Math.min(delta, 0.033);
+      controllerRef.current.update(safeDelta);
       
       const lipSync = getLipSync();
       if (lipSync.isPlaying) {
@@ -143,16 +149,9 @@ function VRMLoaderComponent({ vrmUrl, mode = 'dashboard', onControllerReady }: V
         vrm.expressionManager?.setValue('ih', mouth.vowelI);
         vrm.expressionManager?.setValue('oh', mouth.vowelO);
         vrm.expressionManager?.setValue('ou', mouth.vowelU);
-      } else {
-        // Reset mouth if not playing
-        vrm.expressionManager?.setValue('aa', 0);
-        vrm.expressionManager?.setValue('ee', 0);
-        vrm.expressionManager?.setValue('ih', 0);
-        vrm.expressionManager?.setValue('oh', 0);
-        vrm.expressionManager?.setValue('ou', 0);
       }
 
-      vrm.update(2);
+      vrm.update(safeDelta);
     }
   });
 

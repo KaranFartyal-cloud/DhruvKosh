@@ -319,3 +319,89 @@ def get_public_generated_content(
         query = query.filter(GeneratedContent.content_category == content_category)
     
     return query.order_by(GeneratedContent.published_at.desc()).all()
+
+
+from pydantic import BaseModel
+from typing import Optional
+
+class ExpeditionChatRequest(BaseModel):
+    message: str
+    user_type: Optional[str] = "student"
+
+@router.post("/expedition/{expedition_id}/chat")
+async def chat_with_expedition(
+    expedition_id: int,
+    request: ExpeditionChatRequest,
+    db: Session = Depends(get_db)
+):
+    """Conversational RAG endpoint for the 3D Polar Guide Mascot."""
+    from app.services.content_generator import gather_source_material
+    from app.models import Expedition
+    from groq import Groq
+    import os
+
+    exp = db.query(Expedition).filter(Expedition.id == expedition_id).first()
+    context = ""
+    exp_name = "Indian Polar Research Program"
+    if exp:
+        exp_name = exp.name
+        try:
+            context = gather_source_material(expedition_id, db)
+        except Exception:
+            context = exp.summary or ""
+
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    reply = ""
+    action = "SPEAKING"
+    emotion = "FRIENDLY"
+
+    if groq_api_key:
+        try:
+            client = Groq(api_key=groq_api_key)
+            system_prompt = (
+                f"You are Mavis, the 3D AI Polar Research Guide for NCPOR (National Centre for Polar and Ocean Research, India).\n"
+                f"You are speaking directly to a user in mode '{request.user_type}' about {exp_name}.\n"
+                f"Use this expedition context:\n{context[:2500]}\n\n"
+                f"Guidelines:\n"
+                f"- Give a direct, friendly, informative spoken answer in 2 to 3 sentences.\n"
+                f"- Do NOT use markdown symbols, stars, or bullet points.\n"
+                f"- Highlight real Indian Antarctic/Arctic science (Maitri, Bharati, Himadri, ice cores, sea level rise)."
+            )
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": request.message}
+                ],
+                temperature=0.6,
+                max_tokens=220
+            )
+            reply = completion.choices[0].message.content.strip()
+        except Exception as e:
+            reply = f"In {exp_name}, our scientists at NCPOR are monitoring ice shelves, basal melting, and climate trends. Regarding your question: polar ice sheets and ocean currents are key indicators of global changes."
+    else:
+        reply = f"Hello! As your NCPOR Polar Science Guide, I can share that {exp_name} collected vital atmospheric and glaciological data."
+
+    text_lower = reply.lower()
+    if any(w in text_lower for w in ["great", "congratulations", "success", "wonderful", "amazing", "victory"]):
+        action = "VICTORY"
+        emotion = "HAPPY"
+    elif any(w in text_lower for w in ["thinning", "melting", "warning", "danger", "loss", "retreat", "concern"]):
+        action = "SPEAKING"
+        emotion = "SERIOUS"
+    elif any(w in text_lower for w in ["hello", "hi", "welcome", "hey", "namaste"]):
+        action = "WAVE"
+        emotion = "FRIENDLY"
+    elif any(w in text_lower for w in ["analyzing", "measuring", "calculate", "researching", "data", "how", "why"]):
+        action = "THINKING"
+        emotion = "THINKING"
+    else:
+        action = "SPEAKING"
+        emotion = "FRIENDLY"
+
+    return {
+        "reply": reply,
+        "action": action,
+        "animation": action,
+        "emotion": emotion
+    }

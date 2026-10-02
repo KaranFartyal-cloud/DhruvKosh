@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { VRM, VRMExpressionPresetName } from '@pixiv/three-vrm';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { MascotAction } from '../services/api-client';
 import { mixamoFbx2motion } from '../animation/mixamoFbx2motion';
 
 const ANIMATION_FILES: Record<string, string> = {
@@ -10,14 +9,28 @@ const ANIMATION_FILES: Record<string, string> = {
   'BREATHINGIDLE': '/animations/breathing.fbx',
   'BREATHING': '/animations/breathing.fbx',
   'THINKING': '/animations/thinking.fbx',
+  'THINK': '/animations/thinking.fbx',
   'SPEAKING': '/animations/talking.fbx',
+  'TALKING': '/animations/talking.fbx',
+  'SPEAK': '/animations/talking.fbx',
+  'EXPLAIN': '/animations/talking.fbx',
   'ANGRY': '/animations/angrypoint.fbx',
+  'POINT': '/animations/angrypoint.fbx',
   'THANKFUL': '/animations/thankful.fbx',
+  'THANKS': '/animations/thankful.fbx',
   'VICTORY': '/animations/victory.fbx',
+  'SUCCESS': '/animations/victory.fbx',
+  'CHEER': '/animations/victory.fbx',
+  'HAPPY': '/animations/victory.fbx',
   'SAD': '/animations/sadidle.fbx',
+  'SORRY': '/animations/sadidle.fbx',
   'WAVE': '/animations/wave.fbx',
+  'GREETING': '/animations/wave.fbx',
+  'HELLO': '/animations/wave.fbx',
   'WALKING': '/animations/walking.fbx',
-  'DEFEAT': '/animations/defeat.fbx'
+  'WALK': '/animations/walking.fbx',
+  'DEFEAT': '/animations/defeat.fbx',
+  'ERROR': '/animations/defeat.fbx'
 };
 
 export class HumanAnimationController {
@@ -28,6 +41,13 @@ export class HumanAnimationController {
   private clipCache: Map<string, THREE.AnimationClip> = new Map();
   private loader = new FBXLoader();
 
+  // Natural Blinking & Mouth Flap state
+  private blinkTimer = 0;
+  private nextBlinkInterval = 3.5;
+  private isBlinking = false;
+  private isSpeaking = false;
+  private speechTimer = 0;
+
   constructor(vrm: VRM) {
     this.vrm = vrm;
     this.mixer = new THREE.AnimationMixer(vrm.scene);
@@ -36,48 +56,111 @@ export class HumanAnimationController {
 
   public update(deltaTime: number) {
     this.mixer.update(deltaTime);
+    this.updateBlinking(deltaTime);
+    this.updateMouthLipSync(deltaTime);
+  }
+
+  public setSpeaking(speaking: boolean) {
+    this.isSpeaking = speaking;
+    if (speaking) {
+      this.play('SPEAKING');
+    } else {
+      this.play('IDLE');
+      this.resetMouth();
+    }
+  }
+
+  private updateBlinking(delta: number) {
+    if (!this.vrm?.expressionManager) return;
+    this.blinkTimer += delta;
+
+    if (this.isBlinking) {
+      if (this.blinkTimer > 0.12) {
+        this.setBlendshapes(['blink', 'blinkLeft', 'blinkRight'], 0);
+        this.isBlinking = false;
+        this.blinkTimer = 0;
+        this.nextBlinkInterval = 2.5 + Math.random() * 3.5;
+      }
+    } else {
+      if (this.blinkTimer > this.nextBlinkInterval) {
+        this.setBlendshapes(['blink', 'blinkLeft', 'blinkRight'], 1.0);
+        this.isBlinking = true;
+        this.blinkTimer = 0;
+      }
+    }
+  }
+
+  private updateMouthLipSync(delta: number) {
+    if (!this.vrm?.expressionManager) return;
+
+    // Check if browser speech synthesis is speaking
+    const synthSpeaking = typeof window !== 'undefined' && window.speechSynthesis && window.speechSynthesis.speaking;
+    const active = this.isSpeaking || synthSpeaking;
+
+    if (active) {
+      this.speechTimer += delta * 15;
+      const vowelA = Math.max(0, Math.sin(this.speechTimer) * 0.7 + Math.sin(this.speechTimer * 1.7) * 0.3);
+      const vowelO = Math.max(0, Math.cos(this.speechTimer * 0.9) * 0.45);
+      const vowelI = Math.max(0, Math.sin(this.speechTimer * 2.2) * 0.35);
+
+      this.setBlendshapes(['aa', 'a'], vowelA);
+      this.setBlendshapes(['oh', 'o'], vowelO);
+      this.setBlendshapes(['ih', 'i', 'ee'], vowelI);
+    }
+  }
+
+  private resetMouth() {
+    this.setBlendshapes(['aa', 'a', 'oh', 'o', 'ih', 'i', 'ee', 'ou', 'u'], 0);
+  }
+
+  private setBlendshapes(names: string[], value: number) {
+    if (!this.vrm?.expressionManager) return;
+    for (const name of names) {
+      try {
+        this.vrm.expressionManager.setValue(name, value);
+      } catch (_) {}
+    }
   }
 
   public applyEmotion(emotion: string) {
     if (!this.vrm || !this.vrm.expressionManager) return;
-    const manager = this.vrm.expressionManager;
-    
-    [
-      VRMExpressionPresetName.Happy, 
-      VRMExpressionPresetName.Angry, 
-      VRMExpressionPresetName.Sad, 
-      VRMExpressionPresetName.Relaxed, 
-      VRMExpressionPresetName.Surprised, 
-      VRMExpressionPresetName.Neutral
-    ].forEach(p => manager.setValue(p, 0));
+
+    // Reset base facial emotion blendshapes (support VRM 0.0 & 1.0 presets)
+    const emotionPresets = [
+      'happy', 'joy', 'fun',
+      'angry', 'sorrow', 'sad',
+      'relaxed', 'surprised', 'neutral'
+    ];
+    this.setBlendshapes(emotionPresets, 0);
 
     const emo = String(emotion || 'NEUTRAL').toUpperCase();
+    console.log("🎭 Polar Guide Facial Emotion:", emo);
 
-    if (['HAPPY', 'FRIENDLY', 'CELEBRATORY', 'EXCITED', 'VICTORY', 'GOOD'].includes(emo)) {
-      manager.setValue(VRMExpressionPresetName.Happy, 1.0);
+    if (['HAPPY', 'FRIENDLY', 'CELEBRATORY', 'EXCITED', 'VICTORY', 'GOOD', 'SUCCESS'].includes(emo)) {
+      this.setBlendshapes(['happy', 'joy', 'fun'], 1.0);
     }
-    else if (['SAD', 'DISAPPOINTED', 'SORRY'].includes(emo)) {
-      manager.setValue(VRMExpressionPresetName.Sad, 1.0);
+    else if (['SAD', 'DISAPPOINTED', 'SORRY', 'DEFEAT'].includes(emo)) {
+      this.setBlendshapes(['sad', 'sorrow'], 1.0);
     }
     else if (['ANGRY', 'FRUSTRATED', 'HATE'].includes(emo)) {
-      manager.setValue(VRMExpressionPresetName.Angry, 1.0);
+      this.setBlendshapes(['angry'], 1.0);
     }
     else if (['SURPRISED', 'SHOCKED', 'WOW'].includes(emo)) {
-      manager.setValue(VRMExpressionPresetName.Surprised, 1.0);
+      this.setBlendshapes(['surprised'], 1.0);
     }
     else if (['CALM', 'RELAXED', 'PEACE'].includes(emo)) {
-      manager.setValue(VRMExpressionPresetName.Relaxed, 1.0);
+      this.setBlendshapes(['relaxed', 'fun'], 0.7);
     }
     else if (['THINKING', 'CONFUSED', 'SERIOUS', 'FOCUS'].includes(emo)) {
-      manager.setValue(VRMExpressionPresetName.Sad, 0.2);
-      manager.setValue(VRMExpressionPresetName.Neutral, 0.8);
+      this.setBlendshapes(['sad', 'sorrow'], 0.25);
+      this.setBlendshapes(['neutral'], 0.75);
     }
     else if (['SUPPORTIVE', 'HELPFUL', 'THANKFUL'].includes(emo)) {
-      manager.setValue(VRMExpressionPresetName.Happy, 0.6);
-      manager.setValue(VRMExpressionPresetName.Relaxed, 0.4);
+      this.setBlendshapes(['happy', 'joy'], 0.7);
+      this.setBlendshapes(['relaxed'], 0.3);
     }
     else {
-      manager.setValue(VRMExpressionPresetName.Neutral, 1.0);
+      this.setBlendshapes(['neutral'], 1.0);
     }
   }
 
@@ -90,8 +173,8 @@ export class HumanAnimationController {
   }
 
   public handleServerResponse(data: any) {
-    if (data.mascotAction) {
-      this.play(data.mascotAction);
+    if (data.mascotAction || data.action || data.animation) {
+      this.play(data.mascotAction || data.action || data.animation);
     }
     if (data.emotion) {
       this.applyEmotion(data.emotion);
@@ -114,13 +197,13 @@ export class HumanAnimationController {
       const clip = await this.loadClip(path);
       const newAction = this.mixer.clipAction(clip);
       
-      if (this.currentAction) this.currentAction.fadeOut(0.4);
+      if (this.currentAction) this.currentAction.fadeOut(0.35);
 
-      newAction.reset().fadeIn(0.4).play();
+      newAction.reset().fadeIn(0.35).play();
       this.currentAction = newAction;
       this.currentMascotAction = actionKey;
 
-      const isLoop = ['IDLE', 'THINKING', 'SPEAKING', 'BREATHING', 'BREATHINGIDLE', 'FEMINEIDLE'].includes(actionKey);
+      const isLoop = ['IDLE', 'THINKING', 'SPEAKING', 'TALKING', 'BREATHING', 'BREATHINGIDLE', 'FEMINEIDLE', 'WALKING', 'WALK'].includes(actionKey);
       
       newAction.setLoop(isLoop ? THREE.LoopRepeat : THREE.LoopOnce, isLoop ? Infinity : 1);
       newAction.clampWhenFinished = !isLoop;

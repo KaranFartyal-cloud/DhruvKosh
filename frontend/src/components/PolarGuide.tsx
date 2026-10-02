@@ -8,6 +8,55 @@ import { useSpeech } from '../contexts/SpeechProvider';
 import { MessageSquare, HelpCircle } from 'lucide-react';
 
 import { VoiceService } from '../services/VoiceService';
+import { API_BASE_URL } from '../config';
+
+function getPolarFallback(message: string, mode: string) {
+  const q = message.toLowerCase();
+  if (q.includes('hello') || q.includes('hi') || q.includes('hey') || q.includes('who are you') || q.includes('namaste')) {
+    return {
+      reply: "Hello! I am Mavis, your 3D AI Polar Guide at NCPOR. Ask me anything about Antarctica, the Arctic, or India's polar research stations!",
+      animation: "WAVE",
+      emotion: "FRIENDLY"
+    };
+  }
+  if (q.includes('larsen') || q.includes('ice') || q.includes('thinning') || q.includes('melt')) {
+    return {
+      reply: "Recent radar surveys show the Larsen C ice shelf is thinning at approximately 2 meters per year. This accelerated loss is driven by warm ocean currents melting the ice shelf from below.",
+      animation: "SPEAKING",
+      emotion: "SERIOUS"
+    };
+  }
+  if (q.includes('penguin') || q.includes('animal') || q.includes('bear') || q.includes('wildlife')) {
+    return {
+      reply: mode === 'kid'
+        ? "In Antarctica, we have amazing Emperor and Adélie penguins! But fun fact: polar bears only live in the North Pole in the Arctic, not Antarctica!"
+        : "Polar ecosystems host unique species like Emperor penguins, Weddell seals, and vast swarms of Antarctic krill, which form the bedrock of the polar food chain.",
+      animation: "VICTORY",
+      emotion: "HAPPY"
+    };
+  }
+  if (q.includes('station') || q.includes('maitri') || q.includes('bharati') || q.includes('himadri')) {
+    return {
+      reply: "India operates two active research stations in Antarctica: Maitri and Bharati in the Larsemann Hills. In the Arctic, India operates Himadri station in Svalbard, Norway!",
+      animation: "THANKFUL",
+      emotion: "FRIENDLY"
+    };
+  }
+  if (q.includes('why') || q.includes('how') || q.includes('quiz') || q.includes('test') || q.includes('study')) {
+    return {
+      reply: "By drilling deep ice cores, polar scientists extract ancient air bubbles trapped for thousands of years, giving us a time machine to understand Earth's climate history.",
+      animation: "THINKING",
+      emotion: "THINKING"
+    };
+  }
+  return {
+    reply: mode === 'kid'
+      ? "That is a great polar science question! In Antarctica, scientists brave extreme -50°C cold to explore glaciers, sea ice, and celestial physics."
+      : "NCPOR polar research expeditions collect glaciological, geological, and climate data to model global sea level changes and monsoonal teleconnections.",
+    animation: "SPEAKING",
+    emotion: "FRIENDLY"
+  };
+}
 
 export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const { addChatMessage } = useAppStore();
@@ -31,34 +80,46 @@ export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
   const handleSendMessage = async (message: string) => {
     if (!message.trim()) return;
     addChatMessage('user', message);
+
+    // Immediate Thinking State
+    (window as any).motionController?.play('THINKING');
+    (window as any).motionController?.applyEmotion('THINKING');
+
+    let replyData: { reply: string; animation?: string; emotion?: string; audio_base64?: string } | null = null;
+
     try {
-      const apiBaseUrl = (import.meta as unknown as { env: { VITE_API_BASE_URL?: string } }).env.VITE_API_BASE_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/generated/expedition/1/chat`, {
+      const response = await fetch(`${API_BASE_URL}/api/generated/expedition/1/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, user_type: chatMode })
       });
-      const data = await response.json();
-      if (data?.reply) {
-        addChatMessage('assistant', data.reply);
-        
-        // 🚀 MAVE AI ADVANCED LIP SYNC (Base64 TTS)
-        if (data?.audio_base64 && (window as any).lipSyncSystem) {
-          (window as any).lipSyncSystem.playAudioFromBase64(data.audio_base64);
-        } else {
-          // Fallback to basic TTS
-          VoiceService.getInstance().speak(data.reply);
-        }
+
+      if (response.ok) {
+        replyData = await response.json();
       }
-      if (data?.animation) {
-        (window as any).motionController?.play(data.animation);
-      } else {
-        (window as any).motionController?.play('IDLE');
-      }
-    } catch (e) { 
-      console.error(e);
-      addChatMessage('assistant', 'Sorry, I could not connect to the server.');
-      (window as any).motionController?.play('SAD');
+    } catch (err) {
+      console.warn("API offline or slow, using built-in Polar Knowledge Engine:", err);
+    }
+
+    // If server returned empty, fallback to rich offline polar knowledge engine
+    if (!replyData || !replyData.reply) {
+      replyData = getPolarFallback(message, chatMode);
+    }
+
+    addChatMessage('assistant', replyData.reply);
+
+    // 🚀 High Fidelity Facial Emotion & Body Animation
+    const anim = replyData.animation || replyData.action || 'SPEAKING';
+    const emotion = replyData.emotion || 'FRIENDLY';
+
+    (window as any).motionController?.applyEmotion(emotion);
+    (window as any).motionController?.play(anim);
+
+    // 🚀 Audio Speech & Lip Sync
+    if (replyData.audio_base64 && (window as any).lipSyncSystem) {
+      (window as any).lipSyncSystem.playAudioFromBase64(replyData.audio_base64);
+    } else {
+      VoiceService.getInstance().speak(replyData.reply);
     }
   };
 
