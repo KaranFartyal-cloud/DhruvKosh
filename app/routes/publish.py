@@ -41,19 +41,10 @@ def get_platforms():
         "publish_mode": os.getenv("PUBLISH_MODE", "dry_run")
     }
 
-<<<<<<< HEAD
-@router.post("/{generated_content_id}")
-async def create_publish(
-    generated_content_id: int, 
-    request: PublishRequest, 
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_social_posting_permission)
-=======
 @router.post("/upload-image")
 async def upload_publish_image(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
->>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
 ):
     """Upload an image to attach when publishing (e.g. for Instagram)."""
     content = await file.read()

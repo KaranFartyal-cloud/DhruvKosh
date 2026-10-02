@@ -4,12 +4,8 @@ from sqlalchemy.orm import Session
 import hashlib
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-<<<<<<< HEAD
 from typing import Optional, List
-=======
-from typing import Optional
 from pydantic import BaseModel
->>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
 from app.database import get_db
 from app.models import User, Role
 from app.schemas import (
@@ -206,18 +202,24 @@ def login(
         user=UserSchema.from_orm(user)
     )
 
-<<<<<<< HEAD
 @router.post("/google-login", response_model=LoginResponse)
 def google_login(req: GoogleAuthRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == req.email).first()
+    email = getattr(req, "email", None) or getattr(req, "credential", None)
+    name = getattr(req, "name", "Normal User")
+    avatar_url = getattr(req, "avatar_url", "https://lh3.googleusercontent.com/a/default-user=s96-c")
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required for google login")
+
+    user = db.query(User).filter(User.email == email).first()
     
     if not user:
         user = User(
-            name=req.name,
-            email=req.email,
-            role=Role.user, # Normal User role
+            name=name,
+            email=email,
+            role=Role.viewer, # Normal User role
             password_hash="",
-            avatar_url=req.avatar_url or "https://lh3.googleusercontent.com/a/default-user=s96-c",
+            avatar_url=avatar_url,
             is_approved=True,
             created_at=datetime.utcnow()
         )
@@ -225,8 +227,8 @@ def google_login(req: GoogleAuthRequest, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(user)
     else:
-        if req.avatar_url and not user.avatar_url:
-            user.avatar_url = req.avatar_url
+        if avatar_url and not user.avatar_url:
+            user.avatar_url = avatar_url
             db.commit()
             db.refresh(user)
 
@@ -242,6 +244,61 @@ def google_login(req: GoogleAuthRequest, db: Session = Depends(get_db)):
         token_type="bearer",
         user=UserSchema.from_orm(user)
     )
+
+@router.post("/google", response_model=LoginResponse)
+def google_auth_credential(request: GoogleAuthRequest, db: Session = Depends(get_db)):
+    """
+    Google OAuth login endpoint for decoded ID tokens.
+    """
+    try:
+        import json
+        import base64
+
+        parts = getattr(request, "credential", "").split('.')
+        if len(parts) == 3:
+            payload = parts[1]
+            padding = 4 - len(payload) % 4
+            if padding != 4:
+                payload += '=' * padding
+            decoded = base64.urlsafe_b64decode(payload)
+            payload_data = json.loads(decoded)
+            email = payload_data.get('email')
+            name = payload_data.get('name', email.split('@')[0] if email else 'Google User')
+        else:
+            email = getattr(request, "email", None)
+            name = getattr(request, "name", "Google User")
+
+        if not email:
+            raise HTTPException(status_code=400, detail="Could not extract email from Google credential")
+
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            user = User(
+                name=name,
+                email=email,
+                role=Role.viewer,
+                password_hash=""
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        role_val = user.role.value if hasattr(user.role, "value") else str(user.role)
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": str(user.id), "role": role_val},
+            expires_delta=access_token_expires
+        )
+
+        return LoginResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=UserSchema.from_orm(user)
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Google auth failed: {str(e)}")
 
 @router.get("/me", response_model=UserSchema)
 def get_me(current_user: User = Depends(get_current_user)):
@@ -287,78 +344,3 @@ def reject_researcher(
     db.commit()
     db.refresh(user)
     return user
-
-=======
-@router.post("/google", response_model=LoginResponse)
-def google_login(request: GoogleAuthRequest, db: Session = Depends(get_db)):
-    """
-    Google OAuth login endpoint.
-    Decodes Firebase ID token (demo mode - no verification).
-    In production, use Firebase Admin SDK for proper verification.
-    """
-    try:
-        import json
-        import base64
-
-        # Decode JWT (demo mode - no signature verification)
-        parts = request.credential.split('.')
-        if len(parts) != 3:
-            raise HTTPException(status_code=400, detail="Invalid Google credential")
-
-        # Decode payload (base64url)
-        payload = parts[1]
-        # Add padding if needed
-        padding = 4 - len(payload) % 4
-        if padding != 4:
-            payload += '=' * padding
-        decoded = base64.urlsafe_b64decode(payload)
-        payload_data = json.loads(decoded)
-
-        email = payload_data.get('email')
-        name = payload_data.get('name', email.split('@')[0] if email else 'Google User')
-
-        if not email:
-            raise HTTPException(status_code=400, detail="Could not extract email from Google credential")
-
-        print(f"Google sign-in attempt: {email}")
-
-        # Check if user exists
-        user = db.query(User).filter(User.email == email).first()
-
-        # Create user if doesn't exist
-        if not user:
-            user = User(
-                name=name,
-                email=email,
-                role=Role.viewer,
-                password_hash=get_password_hash("google-auth-user")  # Placeholder password
-            )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-            print(f"Created new user: {email}")
-
-        # Generate JWT token for our app
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={"sub": user.id, "role": user.role.value},
-            expires_delta=access_token_expires
-        )
-
-        print(f"Generated token for user: {user.id}")
-
-        return LoginResponse(
-            access_token=access_token,
-            token_type="bearer",
-            user=UserSchema.from_orm(user)
-        )
-
-    except json.JSONDecodeError as e:
-        print(f"Token decode error: {str(e)}")
-        raise HTTPException(status_code=400, detail="Invalid Google credential format")
-    except Exception as e:
-        print(f"Google auth error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Google auth failed: {str(e)}")
->>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a

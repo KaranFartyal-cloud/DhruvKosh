@@ -2,16 +2,12 @@ import client from './client';
 
 export const getExpeditions = async () => {
   const { data } = await client.get('/api/expeditions');
-<<<<<<< HEAD
-  return Array.isArray(data) ? data : (data?.items || []);
-=======
   // Normalize: handle array, {expeditions:[...]}, {items:[...]}, {data:[...]} etc.
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.expeditions)) return data.expeditions;
   if (Array.isArray(data?.items)) return data.items;
   if (Array.isArray(data?.data)) return data.data;
   return [];
->>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
 };
 
 export const getExpeditionFull = async (id) => {

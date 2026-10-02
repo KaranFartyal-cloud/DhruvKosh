@@ -112,11 +112,8 @@ const PDFPreviewModal = ({ file, onClose }) => {
 /* ─── Main Upload component ─────────────────────────────────────────────── */
 const Upload = () => {
   const navigate = useNavigate();
-<<<<<<< HEAD
   const { user, isAdmin, isResearcher, isApprovedResearcher } = useAuth();
-=======
   const invalidateLiveStats = useInvalidateLiveStats();
->>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
   const fileInputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
