@@ -11,6 +11,8 @@ const NAV = [
   { to: '/upload', label: 'Upload', icon: UploadCloud },
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/publishing', label: 'Publishing', icon: Share2 },
+  { to: '/expeditions', label: 'Expeditions', icon: Database },
+  { to: '/polar-guide', label: 'AI Guide', icon: Bell },
 ];
 
 const Layout = () => {
