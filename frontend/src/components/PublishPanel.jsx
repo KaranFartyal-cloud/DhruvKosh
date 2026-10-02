@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import publishAPI from '../api/publish';
+import { useAuth } from '../context/AuthContext';
+import { AlertCircle, Clock, ShieldAlert } from 'lucide-react';
 
 const PublishPanel = ({ post, onPublishSuccess }) => {
+  const { user, canPublishSocial, isPendingResearcher, isNormalUser } = useAuth();
   const [platforms, setPlatforms] = useState({ configured_platforms: [], publish_mode: 'dry_run' });
   const [selectedPlatforms, setSelectedPlatforms] = useState([]);
   const [scheduleDate, setScheduleDate] = useState('');
@@ -34,6 +37,17 @@ const PublishPanel = ({ post, onPublishSuccess }) => {
   };
 
   const handlePublish = async () => {
+    if (!canPublishSocial) {
+      if (isPendingResearcher) {
+        alert('Your researcher account is currently pending Admin approval. You cannot post content across social media platforms until approved by an Admin.');
+      } else if (isNormalUser) {
+        alert('Normal users cannot post content across social media platforms. Please register as a Researcher and get approved by an Admin.');
+      } else {
+        alert('Please log in with an approved Researcher or Admin account to publish.');
+      }
+      return;
+    }
+
     try {
       setLoading(true);
       await publishAPI.publishContent(post.id, {
@@ -57,6 +71,31 @@ const PublishPanel = ({ post, onPublishSuccess }) => {
   return (
     <div className="bg-ncpor-panel border border-ncpor-divider rounded-xl shadow-premium p-6 mt-6">
       <h3 className="text-xl font-display text-ncpor-primary mb-4">Publish Content</h3>
+      
+      {/* Role & Approval Warning Banner */}
+      {isPendingResearcher && (
+        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 p-4 rounded-xl mb-4 text-sm font-medium flex items-start gap-3">
+          <Clock className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5 animate-pulse" />
+          <div>
+            <p className="font-bold">Pending Admin Approval for Social Media Publishing</p>
+            <p className="text-xs text-amber-300/80 mt-0.5">
+              Your researcher account is registered, but your social media publishing privileges are pending Admin approval. Contact your NCPOR Admin or switch to the Seed Admin account to approve.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isNormalUser && (
+        <div className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 p-4 rounded-xl mb-4 text-sm font-medium flex items-start gap-3">
+          <ShieldAlert className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-bold">Normal User Account</p>
+            <p className="text-xs text-cyan-300/80 mt-0.5">
+              Normal users can explore datasets and research publications. To post content across social media platforms, please register as a Researcher.
+            </p>
+          </div>
+        </div>
+      )}
       
       {!isApproved && (
         <div className="bg-yellow-900/20 text-yellow-500 p-3 rounded mb-4 text-sm font-medium">

@@ -39,9 +39,24 @@ def init_db():
                 "ADD COLUMN publish_status VARCHAR",
                 "ADD COLUMN language VARCHAR DEFAULT 'en'"
             ]
+            user_columns_to_add = [
+                "ADD COLUMN institution VARCHAR",
+                "ADD COLUMN designation VARCHAR",
+                "ADD COLUMN research_area VARCHAR",
+                "ADD COLUMN researcher_id VARCHAR",
+                "ADD COLUMN phone_number VARCHAR",
+                "ADD COLUMN is_approved BOOLEAN DEFAULT 0",
+                "ADD COLUMN avatar_url VARCHAR",
+                "ADD COLUMN created_at TIMESTAMP"
+            ]
             for col in columns_to_add:
                 try:
                     conn.execute(text(f"ALTER TABLE generated_content {col}"))
+                except Exception:
+                    pass
+            for col in user_columns_to_add:
+                try:
+                    conn.execute(text(f"ALTER TABLE users {col}"))
                 except Exception:
                     pass
     except Exception as e:

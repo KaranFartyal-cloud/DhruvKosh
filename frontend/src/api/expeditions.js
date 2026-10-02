@@ -2,7 +2,7 @@ import client from './client';
 
 export const getExpeditions = async () => {
   const { data } = await client.get('/api/expeditions');
-  return data;
+  return Array.isArray(data) ? data : (data?.items || []);
 };
 
 export const getExpeditionFull = async (id) => {

@@ -17,37 +17,27 @@ def seed_database():
     db = SessionLocal()
     
     try:
-        # Check if users already exist
-        if db.query(User).count() > 0:
-            print("Database already seeded. Skipping.")
+        # Check if expeditions already exist
+        if db.query(Expedition).count() > 0:
+            print("Expeditions already seeded. Skipping.")
             return
         
-        # Create users
-        admin = User(
-            name="Admin User",
-            email="admin@ncpor.gov.in",
-            role=Role.admin,
-            password_hash=simple_hash("admin123")
-        )
-        
-        editor = User(
-            name="Editor User",
-            email="editor@ncpor.gov.in",
-            role=Role.editor,
-            password_hash=simple_hash("editor123")
-        )
-        
-        viewer = User(
-            name="Viewer User",
-            email="viewer@ncpor.gov.in",
-            role=Role.viewer,
-            password_hash=simple_hash("viewer123")
-        )
-        
-        db.add_all([admin, editor, viewer])
-        db.commit()
-        
-        print("Created 3 users: admin, editor, viewer")
+        # Create users if missing
+        admin = db.query(User).filter(User.email == "admin@ncpor.gov.in").first()
+        if not admin:
+            admin = User(
+                name="Admin Administrator",
+                email="admin@ncpor.gov.in",
+                role=Role.admin,
+                password_hash=simple_hash("admin123"),
+                is_approved=True,
+                institution="National Centre for Polar and Ocean Research",
+                designation="Chief System Administrator",
+                researcher_id="ADMIN-001"
+            )
+            db.add(admin)
+            db.commit()
+            db.refresh(admin)
         
         # Create Antarctic Expedition
         antarctic_expedition = Expedition(

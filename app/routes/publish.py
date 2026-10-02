@@ -14,6 +14,9 @@ import httpx
 from fastapi.responses import RedirectResponse
 import json
 
+from app.routes.auth import require_social_posting_permission
+from app.models import User
+
 router = APIRouter()
 
 class PublishRequest(BaseModel):
@@ -32,7 +35,8 @@ def get_platforms():
 async def create_publish(
     generated_content_id: int, 
     request: PublishRequest, 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_social_posting_permission)
 ):
     try:
         logs = await publish_content(
