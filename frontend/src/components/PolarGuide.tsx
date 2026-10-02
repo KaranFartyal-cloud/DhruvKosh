@@ -98,7 +98,7 @@ export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 sec timeout
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 sec timeout (to allow high-quality TTS generation)
 
       const response = await fetch(`${API_BASE_URL}/api/generated/expedition/1/chat`, {
         method: 'POST',
