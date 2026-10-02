@@ -65,7 +65,6 @@ const Repository = () => {
   const [year,        setYear]        = useState('');
   const [contentType, setContentType] = useState('');
   const [search,      setSearch]      = useState('');
-  const [page,        setPage]        = useState(1);
 
   const categories   = ['', 'glaciology', 'ocean', 'atmosphere', 'biology', 'general'];
   const contentTypes = ['', 'report', 'photo', 'video', 'dataset', 'publication'];
@@ -87,8 +86,7 @@ const Repository = () => {
           year:         year         || undefined,
           content_type: contentType  || undefined,
           search:       debouncedSearch || undefined,
-          page,
-          page_size: 20
+          page_size: 100
         };
         const response = await contentAPI.getAll(params);
         await new Promise(r => setTimeout(r, 120));
@@ -104,12 +102,12 @@ const Repository = () => {
       }
     };
     fetchContent();
-  }, [category, year, contentType, debouncedSearch, page]);
+  }, [category, year, contentType, debouncedSearch]);
 
   /* ── Filter handlers ── */
-  const handleCategoryChange    = (v) => { setCategory(v);    setPage(1); };
-  const handleYearChange        = (v) => { setYear(v);        setPage(1); };
-  const handleContentTypeChange = (v) => { setContentType(v); setPage(1); };
+  const handleCategoryChange    = (v) => setCategory(v);
+  const handleYearChange        = (v) => setYear(v);
+  const handleContentTypeChange = (v) => setContentType(v);
 
   const selectCls = `w-full bg-ncpor-panel text-ncpor-primary px-3.5 py-2 border border-ncpor-divider rounded-lg
     focus:outline-none focus:border-ncpor-accent focus:ring-2 focus:ring-ncpor-accent/20
@@ -122,7 +120,6 @@ const Repository = () => {
       <PolarGlobeHero
         onSearch={(query) => {
           setSearch(query);
-          setPage(1);
           const el = document.getElementById('repository-explorer');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
@@ -183,7 +180,7 @@ const Repository = () => {
                   </div>
 
                   <button
-                    onClick={() => { setCategory(''); setYear(''); setContentType(''); setSearch(''); setPage(1); }}
+                    onClick={() => { setCategory(''); setYear(''); setContentType(''); setSearch(''); }}
                     className="w-full bg-transparent text-ncpor-secondary border border-ncpor-divider py-2 px-3 rounded-lg
                       hover:border-ncpor-accent hover:text-ncpor-accent
                       active:scale-[0.98] transition-all duration-150 font-medium text-xs mt-2"
@@ -237,44 +234,15 @@ const Repository = () => {
                   </Link>
                 </div>
               ) : (
-                <>
-                  {/* Card grid */}
-                  <div
-                    key={gridKey}
-                    className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 transition-opacity duration-200 ${filtering ? 'opacity-40' : 'opacity-100'}`}
-                  >
-                    {contentItems.map((item, i) => (
-                      <ContentCard key={item.id} item={item} index={i} />
-                    ))}
-                  </div>
-
-                  {/* Pagination */}
-                  <div className="flex justify-center items-center mt-10 space-x-3">
-                    <button
-                      onClick={() => setPage(Math.max(1, page - 1))}
-                      disabled={page === 1}
-                      className="px-4 py-2 bg-ncpor-panel border border-ncpor-divider text-ncpor-primary text-xs font-medium rounded-lg
-                        hover:border-ncpor-accent hover:text-ncpor-accent
-                        disabled:opacity-40 disabled:cursor-not-allowed
-                        active:scale-[0.98] transition-all duration-150"
-                    >
-                      Previous
-                    </button>
-                    <span className="px-4 py-2 bg-ncpor-panel text-ncpor-primary border border-ncpor-divider rounded-lg font-mono text-xs">
-                      Page {page}
-                    </span>
-                    <button
-                      onClick={() => setPage(page + 1)}
-                      disabled={contentItems.length < 20}
-                      className="px-4 py-2 bg-ncpor-panel border border-ncpor-divider text-ncpor-primary text-xs font-medium rounded-lg
-                        hover:border-ncpor-accent hover:text-ncpor-accent
-                        disabled:opacity-40 disabled:cursor-not-allowed
-                        active:scale-[0.98] transition-all duration-150"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </>
+                /* Card grid */
+                <div
+                  key={gridKey}
+                  className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 transition-opacity duration-200 ${filtering ? 'opacity-40' : 'opacity-100'}`}
+                >
+                  {contentItems.map((item, i) => (
+                    <ContentCard key={item.id} item={item} index={i} />
+                  ))}
+                </div>
               )}
             </main>
           </div>

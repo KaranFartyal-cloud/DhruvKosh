@@ -108,7 +108,7 @@ export const ChatHistoryPanel: React.FC = () => {
               initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20, scale: 0.95 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
-              className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+              className={`flex w-full gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse justify-start self-end ml-auto' : 'justify-start'}`}
             >
               {/* Avatar */}
               <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 shadow-md border border-white/10 mt-0.5 ${

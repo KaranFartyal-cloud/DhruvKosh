@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { contentAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { renderFirstPageToCanvas, extractPDFText, analyzePDFContent } from '../utils/pdfHelper';
+import { useInvalidateLiveStats } from '../hooks/useLiveStats';
 
 /* ─── tiny icon helpers ─────────────────────────────────────────────────── */
 const Icon = ({ path, cls = 'w-5 h-5' }) => (
@@ -111,7 +112,11 @@ const PDFPreviewModal = ({ file, onClose }) => {
 /* ─── Main Upload component ─────────────────────────────────────────────── */
 const Upload = () => {
   const navigate = useNavigate();
+<<<<<<< HEAD
   const { user, isAdmin, isResearcher, isApprovedResearcher } = useAuth();
+=======
+  const invalidateLiveStats = useInvalidateLiveStats();
+>>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
   const fileInputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -239,6 +244,7 @@ const Upload = () => {
       data.append('category', formData.category);
       data.append('tags', formData.tags);
       const response = await contentAPI.upload(data);
+      invalidateLiveStats();
       setSuccess(true);
       setTimeout(() => navigate(`/content/${response.data.id}`), 2000);
     } catch (err) {

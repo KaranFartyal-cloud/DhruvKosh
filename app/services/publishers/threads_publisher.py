@@ -29,7 +29,7 @@ class ThreadsPublisher(BasePublisher):
             # Step 1: Create media container
             container_url = f"https://graph.threads.net/{self.api_version}/{self.user_id}/threads"
             
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 container_res = await client.post(container_url, params=params)
                 container_data = container_res.json()
                 
@@ -41,6 +41,10 @@ class ThreadsPublisher(BasePublisher):
                 if not creation_id:
                     return PublishResult(success=False, error="Failed to create threads container")
                     
+                # Add a small delay as Threads API sometimes takes time to process the container
+                import asyncio
+                await asyncio.sleep(3)
+                
                 # Step 2: Publish the container
                 publish_url = f"https://graph.threads.net/{self.api_version}/{self.user_id}/threads_publish"
                 
@@ -59,10 +63,22 @@ class ThreadsPublisher(BasePublisher):
                     
                 media_id = publish_data.get("id")
                 
+                # Step 3: Fetch the real permalink from Threads Graph API
+                real_url = None
+                try:
+                    permalink_res = await client.get(
+                        f"https://graph.threads.net/{self.api_version}/{media_id}",
+                        params={"fields": "permalink", "access_token": self.access_token}
+                    )
+                    permalink_data = permalink_res.json()
+                    real_url = permalink_data.get("permalink")
+                except Exception:
+                    pass  # Fallback: no link rather than broken link
+                
                 return PublishResult(
                     success=True, 
                     external_id=media_id,
-                    url=f"https://www.threads.net/post/{media_id}"
+                    url=real_url
                 )
                 
         except Exception as e:

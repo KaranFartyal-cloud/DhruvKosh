@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import PageTransition from './PageTransition';
@@ -19,10 +20,17 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+=======
+import React, { useState, useEffect, useRef } from 'react';
+import { NavLink, Outlet } from 'react-router-dom';
+import PageTransition from './PageTransition';
+import { Database, UploadCloud, LayoutDashboard, Share2, Bell } from 'lucide-react';
+>>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
 import { useAuth } from '../context/AuthContext';
 import dhruvLogo from '../assets/dhruv_logo.png';
 
 const Layout = () => {
+<<<<<<< HEAD
   const { isLight, toggleTheme } = useTheme();
   const { user, logout, isAdmin, isResearcher, isApprovedResearcher, isPendingResearcher } = useAuth();
   const navigate = useNavigate();
@@ -46,6 +54,43 @@ const Layout = () => {
     logout();
     setShowUserMenu(false);
     navigate('/login');
+=======
+  const { user, logout } = useAuth();
+
+  const handleSignOut = () => {
+    logout();
+    window.location.href = '/login';
+  };
+
+  // Notifications state (in-memory, empty until dynamic events occur)
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const notificationsRef = useRef(null);
+  const [notifications, setNotifications] = useState([]);
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setIsNotificationsOpen(false);
+      }
+    };
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') setIsNotificationsOpen(false);
+    };
+    
+    if (isNotificationsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isNotificationsOpen]);
+
+  const markAllAsRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, read: true })));
+>>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
   };
 
   return (
@@ -100,6 +145,7 @@ const Layout = () => {
             ))}
           </nav>
 
+<<<<<<< HEAD
           {/* Right Action Icons: Theme Toggle, User Profile & Role Status */}
           <div className="flex items-center gap-3">
             {/* Theme Toggle (Midnight / Glacier Day) */}
@@ -221,6 +267,84 @@ const Layout = () => {
                 <span>Login / Register</span>
               </NavLink>
             )}
+=======
+          {/* Right Action Icons: Status, Bell, User Avatar */}
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-ncpor-panel/80 border border-ncpor-divider text-[11px] font-mono text-ncpor-muted">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Polar Sync</span>
+            </div>
+
+            {/* Notification Bell */}
+            <div className="relative" ref={notificationsRef}>
+              <button 
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                className="p-2 relative text-ncpor-muted hover:text-ncpor-accent hover:bg-ncpor-panel rounded-lg transition-colors border border-transparent hover:border-ncpor-divider"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-ncpor-bg"></span>
+                )}
+              </button>
+              
+              {/* Dropdown Panel */}
+              {isNotificationsOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-ncpor-panel border border-ncpor-divider rounded-xl shadow-2xl z-50 overflow-hidden animate-fade-in flex flex-col">
+                  <div className="p-3 border-b border-ncpor-divider flex items-center justify-between bg-ncpor-bg/50">
+                    <h3 className="text-sm font-semibold text-ncpor-primary">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <button onClick={markAllAsRead} className="text-xs text-ncpor-accent hover:text-ncpor-primary transition-colors">
+                        Mark all as read
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.length > 0 ? (
+                      notifications.map(note => (
+                        <div key={note.id} className={`p-3 border-b border-ncpor-divider/50 hover:bg-ncpor-elevated transition-colors ${!note.read ? 'bg-ncpor-accent/5' : ''}`}>
+                          <div className="flex justify-between items-start gap-2">
+                            <h4 className={`text-sm ${!note.read ? 'text-ncpor-primary font-medium' : 'text-ncpor-secondary'}`}>{note.title}</h4>
+                            <span className="text-[10px] text-ncpor-muted whitespace-nowrap">{note.time}</span>
+                          </div>
+                          <p className="text-xs text-ncpor-muted mt-1">{note.message}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-6 text-center text-sm text-ncpor-muted">
+                        No new notifications
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Avatar Pill */}
+            <div className="relative group">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#2F5FA8] to-slate-800 border border-ncpor-accent/30 flex items-center justify-center text-ncpor-accent font-bold text-xs shadow-sm cursor-pointer hover:border-ncpor-accent transition-colors">
+                {user?.name ? user.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() : 'DK'}
+              </div>
+              
+              <div className="absolute right-0 mt-2 w-48 bg-ncpor-panel border border-ncpor-divider rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 overflow-hidden">
+                {user ? (
+                  <>
+                    <div className="px-4 py-3 border-b border-ncpor-divider">
+                      <p className="text-sm font-medium text-ncpor-primary truncate">{user.name}</p>
+                      <p className="text-xs text-ncpor-muted truncate">{user.email}</p>
+                    </div>
+                    <button onClick={handleSignOut} className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-ncpor-elevated transition-colors">
+                      Sign out
+                    </button>
+                  </>
+                ) : (
+                  <NavLink to="/login" className="block w-full text-left px-4 py-2 text-sm text-ncpor-primary hover:bg-ncpor-elevated transition-colors">
+                    Sign in
+                  </NavLink>
+                )}
+              </div>
+            </div>
+>>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
           </div>
         </div>
       </header>

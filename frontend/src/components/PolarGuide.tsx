@@ -12,6 +12,25 @@ import { API_BASE_URL } from '../config';
 
 function getPolarFallback(message: string, mode: string) {
   const q = message.toLowerCase();
+  
+  if (mode === 'kid') {
+    // Basic heuristics for offline quiz interactions
+    if (q.includes('yes') || q.includes('true') || q.includes('right') || q.includes('penguin') || q.includes('antarctica')) {
+      return {
+        reply: "That's exactly right! You're a brilliant polar explorer! Great job!",
+        animation: "QUIZ_CORRECT",
+        emotion: "HAPPY"
+      };
+    }
+    if (q.includes('no') || q.includes('false') || q.includes('wrong') || q.includes('bear')) {
+      return {
+        reply: "Oops, not quite! Polar bears are in the Arctic, not Antarctica! But don't worry, let's keep exploring!",
+        animation: "QUIZ_WRONG",
+        emotion: "SAD"
+      };
+    }
+  }
+
   if (q.includes('hello') || q.includes('hi') || q.includes('hey') || q.includes('who are you') || q.includes('namaste')) {
     return {
       reply: "Hello! I am Mavis, your 3D AI Polar Guide at NCPOR. Ask me anything about Antarctica, the Arctic, or India's polar research stations!",
@@ -22,7 +41,7 @@ function getPolarFallback(message: string, mode: string) {
   if (q.includes('larsen') || q.includes('ice') || q.includes('thinning') || q.includes('melt')) {
     return {
       reply: "Recent radar surveys show the Larsen C ice shelf is thinning at approximately 2 meters per year. This accelerated loss is driven by warm ocean currents melting the ice shelf from below.",
-      animation: "SPEAKING",
+      animation: "EXPLAIN",
       emotion: "SERIOUS"
     };
   }
@@ -31,7 +50,7 @@ function getPolarFallback(message: string, mode: string) {
       reply: mode === 'kid'
         ? "In Antarctica, we have amazing Emperor and Adélie penguins! But fun fact: polar bears only live in the North Pole in the Arctic, not Antarctica!"
         : "Polar ecosystems host unique species like Emperor penguins, Weddell seals, and vast swarms of Antarctic krill, which form the bedrock of the polar food chain.",
-      animation: "VICTORY",
+      animation: "HAPPY",
       emotion: "HAPPY"
     };
   }
@@ -59,7 +78,7 @@ function getPolarFallback(message: string, mode: string) {
 }
 
 export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
-  const { addChatMessage } = useAppStore();
+  const { addChatMessage, mascot } = useAppStore();
   const { startListening, stopListening, isListening } = useSpeech();
 
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -88,17 +107,31 @@ export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
     let replyData: { reply: string; animation?: string; emotion?: string; audio_base64?: string } | null = null;
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 sec timeout
+
       const response = await fetch(`${API_BASE_URL}/api/generated/expedition/1/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, user_type: chatMode })
+        body: JSON.stringify({ 
+          message, 
+          user_type: chatMode,
+          history: mascot.chatHistory 
+        }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         replyData = await response.json();
       }
-    } catch (err) {
-      console.warn("API offline or slow, using built-in Polar Knowledge Engine:", err);
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.warn("API timeout (5s) — switching to built-in Polar Knowledge Engine");
+      } else {
+        console.warn("API offline — using built-in Polar Knowledge Engine:", err);
+      }
     }
 
     // If server returned empty, fallback to rich offline polar knowledge engine
@@ -158,9 +191,9 @@ export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
       {/* 🟢 MAIN UI */}
       <div className="absolute inset-0 z-20 flex flex-col md:flex-row w-full h-full pointer-events-none">
         
-        {/* Chat History Panel (Left side) */}
-        <div className="hidden lg:block w-[400px] h-full relative z-30 pointer-events-auto p-6 pl-0 pt-0">
-          <ChatHistoryPanel />
+        {/* Left Side Panel (Quiz mode) */}
+        <div className="hidden lg:flex w-[400px] h-full relative z-30 pointer-events-auto p-6 pl-0 pt-0 flex-col">
+          {chatMode === 'kid' ? <ChatHistoryPanel /> : null}
         </div>
         
         {/* Chat Input (Bottom Center) */}
@@ -187,7 +220,7 @@ export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
                       onClick={() => { setChatMode('kid'); setIsMenuOpen(false); }}
                       className={`flex items-center gap-3 px-4 py-3 rounded-[16px] text-sm font-bold transition-all ${chatMode === 'kid' ? 'bg-indigo-600 text-white shadow-lg' : 'text-white/80 hover:bg-white/10'}`}
                     >
-                      <HelpCircle size={16} /> Questions
+                      <HelpCircle size={16} /> Kid Quiz
                     </button>
                   </motion.div>
                 )}
@@ -203,8 +236,9 @@ export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
             </div>
         </div>
         
-        {/* Right side padding to center character visually */}
-        <div className="hidden xl:flex w-[300px] h-full p-8 flex-col items-end gap-6 z-30 pointer-events-none">
+        {/* Right Side Panel (Chat mode) */}
+        <div className="hidden xl:flex w-[400px] h-full p-6 pr-0 pt-0 flex-col relative z-30 pointer-events-auto">
+          {chatMode !== 'kid' ? <ChatHistoryPanel /> : null}
         </div>
       </div>
 

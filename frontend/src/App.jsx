@@ -7,31 +7,43 @@ import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import { SpeechProvider } from './contexts/SpeechProvider';
 
-const Repository = React.lazy(() => import('./pages/Repository'));
-const Upload = React.lazy(() => import('./pages/Upload'));
-const Dashboard = React.lazy(() => import('./pages/Dashboard'));
-const Publishing = React.lazy(() => import('./pages/Publishing'));
-const ContentDetail = React.lazy(() => import('./pages/ContentDetail'));
-const ExpeditionsList = React.lazy(() => import('./pages/ExpeditionsList'));
+const Repository     = React.lazy(() => import('./pages/Repository'));
+const Upload         = React.lazy(() => import('./pages/Upload'));
+const Dashboard      = React.lazy(() => import('./pages/Dashboard'));
+const Publishing     = React.lazy(() => import('./pages/Publishing'));
+const ContentDetail  = React.lazy(() => import('./pages/ContentDetail'));
+const ExpeditionsList  = React.lazy(() => import('./pages/ExpeditionsList'));
 const ExpeditionDetail = React.lazy(() => import('./pages/ExpeditionDetail'));
+<<<<<<< HEAD
 const PolarGuide = React.lazy(() => import('./components/PolarGuide'));
 const Login = React.lazy(() => import('./pages/Login'));
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
+=======
+const PolarGuide     = React.lazy(() => import('./components/PolarGuide'));
+const Auth           = React.lazy(() => import('./pages/Auth'));
+>>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
 
-// Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
-      retry: false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      retry: 2,
     },
   },
 });
+
+const LoadingSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-ncpor-bg">
+    <div className="w-8 h-8 border-2 border-ncpor-accent/30 border-t-ncpor-accent rounded-full animate-spin" />
+  </div>
+);
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
+<<<<<<< HEAD
         <AuthProvider>
           <SpeechProvider>
             <BrowserRouter>
@@ -53,6 +65,26 @@ function App() {
                       <Route path="publishing" element={<Publishing />} />
                       <Route path="content/:id" element={<ContentDetail />} />
                       <Route path="expeditions" element={<ExpeditionsList />} />
+=======
+        <SpeechProvider>
+          <BrowserRouter>
+            {/* AuthProvider MUST be inside BrowserRouter — it uses useNavigate internally */}
+            <AuthProvider>
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingSpinner />}>
+                  <Routes>
+                    {/* Public routes */}
+                    <Route path="/login" element={<Auth />} />
+
+                    {/* Main app shell */}
+                    <Route path="/" element={<Layout />}>
+                      <Route index element={<Repository />} />
+                      <Route path="upload"          element={<Upload />} />
+                      <Route path="dashboard"       element={<Dashboard />} />
+                      <Route path="publishing"      element={<Publishing />} />
+                      <Route path="content/:id"     element={<ContentDetail />} />
+                      <Route path="expeditions"     element={<ExpeditionsList />} />
+>>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
                       <Route path="expeditions/:id" element={<ExpeditionDetail />} />
                       <Route
                         path="polar-guide"
@@ -72,9 +104,15 @@ function App() {
                   </Routes>
                 </Suspense>
               </ErrorBoundary>
+<<<<<<< HEAD
             </BrowserRouter>
           </SpeechProvider>
         </AuthProvider>
+=======
+            </AuthProvider>
+          </BrowserRouter>
+        </SpeechProvider>
+>>>>>>> 9aace11c335f72408e69cde9fbc94238e194360a
       </ThemeProvider>
     </QueryClientProvider>
   );
