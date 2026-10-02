@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef, memo } from 'react';
-import { activitiesAPI, contentAPI } from '../utils/api';
+import { useState, useRef, memo } from 'react';
+import { activitiesAPI } from '../utils/api';
 import { useCountUp, useInView } from '../hooks/useAnimation';
+import { useLiveStats, useInvalidateLiveStats } from '../hooks/useLiveStats';
+import LiveIndicator from '../components/LiveIndicator';
 
 /* ── Animated KPI card ──────────────────────────────────────────────────── */
 const KpiCard = memo(({ label, value, icon, delay = 0 }) => {
@@ -84,52 +86,35 @@ const ActivityItem = memo(({ activity, index }) => (
 
 /* ── Dashboard ──────────────────────────────────────────────────────────── */
 const Dashboard = () => {
-  const [activities, setActivities] = useState([]);
-  const [stats, setStats] = useState({ totalContent: 0, byCategory: {}, totalPosts: 0, pendingApproval: 0 });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: liveData, isLoading, isError, dataUpdatedAt } = useLiveStats();
+  const invalidateLiveStats = useInvalidateLiveStats();
+
   const [newActivity, setNewActivity] = useState({ title: '', description: '', activity_date: '', activity_type: 'outreach_event' });
   const [formShake, setFormShake] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const activitiesResponse = await activitiesAPI.getAll();
-        setActivities(activitiesResponse.data);
-        const contentResponse = await contentAPI.getAll();
-        const contentItems = contentResponse.data;
-        const byCategory = {};
-        contentItems.forEach(item => { byCategory[item.category] = (byCategory[item.category] || 0) + 1; });
-        // Backend doesn't return post counts per item; show 0 until AI generation is used
-        setStats({ totalContent: contentItems.length, byCategory, totalPosts: 0, pendingApproval: 0 });
-        setError(null);
-      } catch (err) {
-        setError('Failed to load dashboard data. Please try again.');
-        console.error('Error fetching dashboard data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  const activities = liveData?.activities || [];
+  const byCategory = liveData?.byCategory || {};
+  const totalContent = liveData?.documents ?? 0;
+  const totalPosts = liveData?.totalPosts ?? 0;
+  const pendingApproval = liveData?.pendingApproval ?? 0;
 
   const handleAddActivity = async (e) => {
     e.preventDefault();
+    setSubmitError(null);
     try {
       await activitiesAPI.create(newActivity);
-      const response = await activitiesAPI.getAll();
-      setActivities(response.data);
+      await invalidateLiveStats();
       setNewActivity({ title: '', description: '', activity_date: '', activity_type: 'outreach_event' });
     } catch (err) {
-      setError('Failed to add activity. Please try again.');
+      setSubmitError('Failed to add activity. Please try again.');
       setFormShake(true);
       setTimeout(() => setFormShake(false), 400);
       console.error('Error adding activity:', err);
     }
   };
 
-  if (loading) {
+  if (isLoading && !liveData) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-ncpor-accent" />
@@ -137,15 +122,15 @@ const Dashboard = () => {
     );
   }
 
-  if (error && activities.length === 0) {
+  if (isError && !liveData) {
     return (
       <div className="bg-red-900/20 border border-red-500/50 text-red-200 px-4 py-3 rounded max-w-7xl mx-auto mt-8 font-medium animate-shake">
-        {error}
+        Failed to load dashboard data. Please check your connection.
       </div>
     );
   }
 
-  const maxCategoryCount = Math.max(...Object.values(stats.byCategory), 1);
+  const maxCategoryCount = Math.max(...Object.values(byCategory), 1);
 
   const KPI_ICONS = {
     totalContent:    'M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z',
@@ -157,20 +142,25 @@ const Dashboard = () => {
   return (
     <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-display text-ncpor-primary mb-1 tracking-tight animate-fade-up" style={{ animationDelay: '0ms' }}>
-          Dashboard
-        </h1>
-        <p className="text-ncpor-secondary text-base animate-fade-up" style={{ animationDelay: '60ms' }}>
-          Platform statistics and institutional activities overview.
-        </p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-display text-ncpor-primary mb-1 tracking-tight animate-fade-up" style={{ animationDelay: '0ms' }}>
+            Dashboard
+          </h1>
+          <p className="text-ncpor-secondary text-base animate-fade-up" style={{ animationDelay: '60ms' }}>
+            Platform statistics and institutional activities overview.
+          </p>
+        </div>
+        <div className="animate-fade-up" style={{ animationDelay: '100ms' }}>
+          <LiveIndicator dataUpdatedAt={dataUpdatedAt} isError={isError} />
+        </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        <KpiCard label="Total Content"    value={stats.totalContent}    icon={KPI_ICONS.totalContent}    delay={80}  />
-        <KpiCard label="Posts Generated"  value={stats.totalPosts}      icon={KPI_ICONS.totalPosts}      delay={140} />
-        <KpiCard label="Pending Approval" value={stats.pendingApproval} icon={KPI_ICONS.pendingApproval} delay={200} />
+        <KpiCard label="Total Content"    value={totalContent}    icon={KPI_ICONS.totalContent}    delay={80}  />
+        <KpiCard label="Posts Generated"  value={totalPosts}      icon={KPI_ICONS.totalPosts}      delay={140} />
+        <KpiCard label="Pending Approval" value={pendingApproval} icon={KPI_ICONS.pendingApproval} delay={200} />
         <KpiCard label="Total Activities" value={activities.length}     icon={KPI_ICONS.activities}      delay={260} />
       </div>
 
@@ -179,7 +169,7 @@ const Dashboard = () => {
         <div className="bg-ncpor-panel border border-ncpor-divider rounded-xl shadow-premium p-7 lg:col-span-1 animate-fade-up" style={{ animationDelay: '200ms' }}>
           <h2 className="text-lg font-display text-ncpor-primary mb-7 tracking-tight">Content by Category</h2>
           <div className="space-y-5">
-            {Object.entries(stats.byCategory).map(([category, count], i) => (
+            {Object.entries(byCategory).map(([category, count], i) => (
               <CategoryBar key={category} category={category} count={count} maxCount={maxCategoryCount} delay={i * 80} />
             ))}
           </div>

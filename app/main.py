@@ -1,9 +1,11 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
 from app.routes import expeditions, reports, datasets, publications, media, activities, files, auth, generated_content
 import uvicorn
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
 
@@ -24,11 +26,17 @@ async def global_exception_handler(request, exc):
 # CORS enabled for all origins (hackathon demo)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # keep for non-credential requests just in case
-    allow_origin_regex=".*",
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:3000",
+        "https://dhruv-kosh.vercel.app",
+        "*"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Include routers
@@ -42,7 +50,13 @@ app.include_router(files.router, prefix="/api/files", tags=["files"])
 app.include_router(generated_content.router, prefix="/api/generated", tags=["generated_content"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 from app.routes import publish
+from fastapi.staticfiles import StaticFiles
+
 app.include_router(publish.router, prefix="/api/publish", tags=["publish"])
+
+# Mount uploads directory so images can be accessed publicly by external APIs (like Instagram)
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.on_event("startup")
 async def startup_event():

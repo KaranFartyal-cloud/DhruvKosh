@@ -1,38 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import publishAPI from '../api/publish';
+import { useInvalidateLiveStats } from '../hooks/useLiveStats';
 
 const Publishing = () => {
-  const [logs, setLogs] = useState([]);
-  const [platforms, setPlatforms] = useState({});
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const invalidateLiveStats = useInvalidateLiveStats();
   const [copiedId, setCopiedId] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const { data: logs = [], isLoading: loadingLogs } = useQuery({
+    queryKey: ['publishLog'],
+    queryFn: async () => {
+      const res = await publishAPI.getPublishLog();
+      return res.data?.items || [];
+    },
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 15000,
+    placeholderData: (prev) => prev,
+    retry: 2,
+  });
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [logRes, platRes] = await Promise.all([
-        publishAPI.getPublishLog(),
-        publishAPI.getPlatforms()
-      ]);
-      setLogs(logRes.data.items || []);
-      setPlatforms(platRes.data);
-    } catch (error) {
-      console.error('Failed to fetch publishing data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: platforms = {} } = useQuery({
+    queryKey: ['publishPlatforms'],
+    queryFn: async () => {
+      const res = await publishAPI.getPlatforms();
+      return res.data || {};
+    },
+    staleTime: 60000,
+    placeholderData: (prev) => prev,
+  });
+
+  const loading = loadingLogs && logs.length === 0;
 
   const handleCancel = async (logId) => {
     if (!window.confirm('Cancel this scheduled post?')) return;
     try {
       await publishAPI.cancelScheduled(logId);
-      fetchData();
+      queryClient.invalidateQueries({ queryKey: ['publishLog'] });
+      invalidateLiveStats();
     } catch (e) {
       console.error(e);
       alert('Failed to cancel');
@@ -47,24 +56,30 @@ const Publishing = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'success': return 'bg-green-100 text-green-800 border-green-300';
-      case 'failed': return 'bg-red-100 text-red-800 border-red-300';
-      case 'scheduled': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'dry_run': return 'bg-gray-100 text-gray-800 border-gray-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+      case 'success': return 'bg-green-500/10 text-green-400 border-green-500/30';
+      case 'failed': return 'bg-red-500/10 text-red-400 border-red-500/30';
+      case 'scheduled': return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
+      case 'dry_run': return 'bg-ncpor-muted/10 text-ncpor-muted border-ncpor-divider';
+      default: return 'bg-ncpor-muted/10 text-ncpor-muted border-ncpor-divider';
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-display text-ncpor-primary">Publishing Dashboard</h1>
-        {platforms.publish_mode && (
-          <span className={`px-4 py-2 rounded-full font-bold text-sm ${platforms.publish_mode === 'dry_run' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800 animate-pulse'}`}>
+    <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-display text-ncpor-primary mb-1 tracking-tight">Publishing Dashboard</h1>
+        <p className="text-ncpor-secondary text-base">Track and manage your published content across platforms.</p>
+      </div>
+
+      {/* Mode indicator */}
+      {platforms.publish_mode && (
+        <div className="mb-8">
+          <span className={`px-4 py-2 rounded-full font-bold text-sm ${platforms.publish_mode === 'dry_run' ? 'bg-ncpor-accent/10 border border-ncpor-accent/30 text-ncpor-accent' : 'bg-red-500/10 border border-red-500/30 text-red-400 animate-pulse'}`}>
             {platforms.publish_mode === 'dry_run' ? 'DRY RUN MODE' : 'LIVE MODE - REAL POSTING ACTIVE'}
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-ncpor-card p-6 rounded-xl shadow-premium border border-ncpor-border">
@@ -131,7 +146,7 @@ const Publishing = () => {
                       {log.status === 'dry_run' ? (
                         <span className="text-ncpor-textMuted italic">Dry run: not published</span>
                       ) : log.status === 'failed' ? (
-                        <span className="text-red-500 font-medium">{log.error_message || 'Failed'}</span>
+                        <span className="text-red-400 font-medium">{log.error_message || 'Failed'}</span>
                       ) : log.status === 'success' ? (
                         log.external_url === 'PRIVATE_TELEGRAM' ? (
                           <span className="text-ncpor-textMuted italic">No public link (private channel)</span>
@@ -143,7 +158,7 @@ const Publishing = () => {
                               </a>
                               <button onClick={() => handleCopy(log.external_url, log.id)} className="text-ncpor-textMuted hover:text-ncpor-textPrimary transition-colors" title="Copy link">
                                 {copiedId === log.id ? (
-                                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                                 ) : (
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
                                 )}
@@ -160,7 +175,7 @@ const Publishing = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {log.status === 'scheduled' && (
-                        <button onClick={() => handleCancel(log.id)} className="text-red-500 hover:text-red-700 font-semibold">
+                        <button onClick={() => handleCancel(log.id)} className="text-red-400 hover:text-red-300 font-semibold transition-colors">
                           Cancel
                         </button>
                       )}

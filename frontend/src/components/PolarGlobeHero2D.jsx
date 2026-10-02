@@ -1,58 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, ArrowUpRight, Globe, Layers } from 'lucide-react';
+import { Search, ArrowUpRight, Globe, Layers, Mountain } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-
-/* ==========================================================================
-   POLAR GLOBE HERO CONFIGURATION & RESEARCH STATIONS
-   ========================================================================== */
-
-const STATIONS = [
-  {
-    id: 'maitri',
-    name: 'Maitri Station',
-    region: 'Antarctica',
-    lat: -70.7658,
-    lon: 11.7358,
-    coordsFormatted: "70°45′57″S, 11°44′09″E",
-    locationDesc: 'Schirmacher Oasis, Queen Maud Land',
-    docs: '18,420',
-    datasets: '86',
-    status: 'Operational Year-Round',
-    established: '1989',
-    elevation: '117 m',
-    color: '#F2B441', // Amber exclusively for station beacon
-  },
-  {
-    id: 'bharati',
-    name: 'Bharati Station',
-    region: 'Antarctica',
-    lat: -69.4078,
-    lon: 76.1872,
-    coordsFormatted: "69°24′28″S, 76°11′14″E",
-    locationDesc: 'Larsemann Hills, East Antarctica',
-    docs: '22,150',
-    datasets: '142',
-    status: 'Advanced Research Hub',
-    established: '2012',
-    elevation: '35 m',
-    color: '#F2B441', // Amber exclusively for station beacon
-  },
-  {
-    id: 'himadri',
-    name: 'Himadri Station',
-    region: 'Arctic',
-    lat: 78.9233,
-    lon: 11.9312,
-    coordsFormatted: "78°55′24″N, 11°55′52″E",
-    locationDesc: 'Ny-Ålesund, Spitsbergen, Svalbard',
-    docs: '7,630',
-    datasets: '84',
-    status: 'International Arctic Base',
-    established: '2008',
-    elevation: '15 m',
-    color: '#F2B441', // Amber exclusively for station beacon
-  },
-];
+import { stations as STATIONS } from '../data/stations';
+import { useLiveStats } from '../hooks/useLiveStats';
+import verifiedFacts from '../data/facts';
+import LiveIndicator from './LiveIndicator';
 
 const SEARCH_PLACEHOLDERS = [
   "Search the polar archive...",
@@ -83,6 +35,15 @@ const ARCTIC_COASTLINE = [
   [76.5, 16.0], [77.2, 14.5], [78.0, 13.5], [78.9, 11.9], [79.8, 11.5],
   [80.3, 16.0], [80.0, 22.0], [79.2, 25.0], [78.4, 21.5], [77.5, 22.0],
   [76.8, 19.5], [76.5, 16.0]
+];
+
+// Vector Coordinates for Himalayas / Third Pole Cryospheric Arc
+const HIMALAYAS_RIDGE = [
+  [36.0, 74.0], [35.5, 75.5], [35.2, 77.0], [34.0, 77.8], [32.8, 77.3],
+  [32.4, 77.6], [31.5, 78.5], [30.8, 79.2], [29.8, 80.5], [28.8, 83.5],
+  [28.0, 86.5], [27.8, 88.5], [28.2, 90.5], [28.5, 92.5], [29.5, 94.5],
+  [30.0, 95.5], [29.0, 95.0], [27.5, 92.0], [27.0, 88.5], [27.2, 85.0],
+  [28.5, 81.0], [30.0, 78.0], [32.0, 76.5], [34.5, 74.5], [36.0, 74.0]
 ];
 
 function projectOrthographic(latDeg, lonDeg, radius, center, rotationAngle = 0, tiltAngle = 1.35) {
@@ -196,8 +157,79 @@ const AnimatedStat = ({ endValue, label, duration = 1400, delay = 0, isLight }) 
   );
 };
 
+/* ── HeroLiveStat — wraps AnimatedStat with live value and tooltip ──────── */
+const HeroLiveStat = ({ value, label, sourceLabel, duration = 1400, delay = 0, isLight }) => {
+  const [display, setDisplay] = useState(0);
+  const prevRef = useRef(0);
+  const rafRef  = useRef(null);
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    if (value == null || isNaN(value)) return;
+    const from = prevRef.current;
+    const to   = value;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    const startAnim = () => {
+      const start = performance.now();
+      const tick = (now) => {
+        const elapsed  = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased    = 1 - Math.pow(1 - progress, 3);
+        setDisplay(Math.round(from + (to - from) * eased));
+        if (progress < 1) {
+          rafRef.current = requestAnimationFrame(tick);
+        } else {
+          prevRef.current = to;
+          startedRef.current = true;
+        }
+      };
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    if (!startedRef.current && delay > 0) {
+      const t = setTimeout(startAnim, delay);
+      return () => clearTimeout(t);
+    } else {
+      startAnim();
+    }
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [value, duration, delay]);
+
+  const formatted = display >= 1000 ? display.toLocaleString() : display;
+
+  return (
+    <div className="group cursor-default transition-all duration-220" title={sourceLabel} aria-label={sourceLabel}>
+      <div
+        className={`font-mono text-xl sm:text-2xl font-bold tracking-tight transition-colors duration-220 tabular-nums ${
+          isLight
+            ? 'text-[#0B1B33] group-hover:text-[#0A7C8C]'
+            : 'text-[#EAF0F8] group-hover:text-[#7FE7F5]'
+        }`}
+        style={{ fontFeatureSettings: '"tnum"' }}
+      >
+        {value == null
+          ? <span className="inline-block w-12 h-6 rounded bg-white/10 animate-pulse align-middle" />
+          : formatted
+        }
+      </div>
+      <div
+        className={`text-[11px] sm:text-xs uppercase tracking-wider font-medium transition-opacity duration-220 ${
+          isLight
+            ? 'text-[#66758C] opacity-75 group-hover:opacity-100'
+            : 'text-[#8592A6] opacity-70 group-hover:opacity-100'
+        }`}
+      >
+        {label}
+      </div>
+    </div>
+  );
+};
+
 export const PolarGlobeHero = ({ onSearch, className = '' }) => {
   const { isLight } = useTheme();
+  // Live stats from backend — shared with Dashboard and Repository
+  const { data: liveData, isError: statsError, dataUpdatedAt } = useLiveStats();
+  const liveDocuments = liveData?.documents ?? null;
+
   const [polarView, setPolarView] = useState('antarctic'); // 'antarctic' | 'arctic'
   const [searchQuery, setSearchQuery] = useState('');
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
@@ -229,7 +261,7 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
   });
 
   useEffect(() => {
-    motionState.current.targetTiltBase = polarView === 'antarctic' ? 1.35 : -1.35;
+    motionState.current.targetTiltBase = polarView === 'antarctic' ? 1.35 : polarView === 'arctic' ? -1.35 : 0.45;
   }, [polarView]);
 
   useEffect(() => {
@@ -465,7 +497,11 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
         }
 
         // Concentric Latitude Graticule Projection
-        const latitudes = polarView === 'antarctic' ? [-80, -70, -60, -50] : [80, 70, 60, 50];
+        const latitudes = polarView === 'antarctic' 
+          ? [-80, -70, -60, -50] 
+          : polarView === 'arctic' 
+            ? [80, 70, 60, 50] 
+            : [40, 35, 30, 25];
         latitudes.forEach((latDeg) => {
           ctx.beginPath();
           let firstPoint = true;
@@ -488,7 +524,11 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
         });
 
         /* ── 4. Polar Landmass Contours ── */
-        const activeCoastline = polarView === 'antarctic' ? ANTARCTIC_COASTLINE : ARCTIC_COASTLINE;
+        const activeCoastline = polarView === 'antarctic' 
+          ? ANTARCTIC_COASTLINE 
+          : polarView === 'arctic' 
+            ? ARCTIC_COASTLINE 
+            : HIMALAYAS_RIDGE;
         ctx.beginPath();
         let coastStarted = false;
         activeCoastline.forEach(([lat, lon]) => {
@@ -530,7 +570,11 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
 
         /* ── 6. Glowing Amber Station Markers (Filtered by active polar realm) ── */
         const visibleStations = STATIONS.filter((s) =>
-          polarView === 'antarctic' ? s.region === 'Antarctica' : s.region === 'Arctic'
+          polarView === 'antarctic' 
+            ? s.region === 'Antarctica' || s.region === 'Southern Ocean'
+            : polarView === 'arctic'
+              ? s.region === 'Arctic'
+              : s.region === 'Himalayas'
         );
 
         visibleStations.forEach((station) => {
@@ -550,27 +594,25 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
 
             ctx.beginPath();
             ctx.arc(pt.x, pt.y, ringRadius, 0, Math.PI * 2);
-            ctx.strokeStyle = '#F2B441';
+            ctx.strokeStyle = station.status === 'planned' ? '#7FE7F5' : '#F2B441';
             ctx.lineWidth = 1.4;
             ctx.globalAlpha = isDimmed ? 0.2 : ringAlpha;
             ctx.stroke();
 
-            // Station Halo using pre-rendered sprite
-            ctx.drawImage(markerSprite, pt.x - 20, pt.y - 20);
-
-            // Solid Amber Core
+            // Solid Amber / Cyan Core
             ctx.beginPath();
             ctx.arc(pt.x, pt.y, isHovered ? 5 : 4, 0, Math.PI * 2);
-            ctx.fillStyle = '#F2B441';
+            ctx.fillStyle = station.status === 'planned' ? '#7FE7F5' : '#F2B441';
             ctx.globalAlpha = isDimmed ? 0.4 : 1;
             ctx.fill();
 
-            // Leader Line & Anti-Clipping Flip
-            // If marker is close to the right edge (pt.x > width - 180), flip label to left!
-            const flipToLeft = pt.x > width - 180 || (pt.x > center.x + radius * 0.4);
+            // Leader Line & Anti-Clipping / Directional Offset
+            const placement = station.labelPlacement || 'right';
+            const flipToLeft = placement.includes('left') || pt.x > width - 180 || (pt.x > center.x + radius * 0.4);
             const lineDir = flipToLeft ? -1 : 1;
-            const lineEndX = pt.x + lineDir * 38;
-            const lineEndY = pt.y - 22;
+            const isTop = placement.includes('top');
+            const lineEndX = pt.x + lineDir * 42;
+            const lineEndY = pt.y + (isTop ? -22 : 22);
 
             ctx.beginPath();
             ctx.moveTo(pt.x, pt.y);
@@ -590,7 +632,7 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
             // Coordinates
             ctx.font = '400 9px monospace';
             ctx.fillStyle = isLight ? '#66758C' : '#8592A6';
-            ctx.fillText(station.coordsFormatted, lineEndX + (flipToLeft ? -5 : 5), lineEndY + 9);
+            ctx.fillText(station.coordsFormatted || `${Math.abs(station.lat).toFixed(2)}°, ${Math.abs(station.lon).toFixed(2)}°`, lineEndX + (flipToLeft ? -5 : 5), lineEndY + 9);
 
             ctx.restore();
           }
@@ -689,8 +731,8 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
           title="Drag to rotate globe. Hover station markers to inspect."
         />
 
-        {/* Antarctic / Arctic View Realm Toggle (Positioned under the globe) */}
-        <div className="absolute bottom-6 right-6 sm:bottom-10 sm:right-12 z-40 flex items-center gap-1.5 p-1 rounded-full border border-white/10 bg-[#0D1422]/95 shadow-sm">
+        {/* Polar Realms: Antarctica, Arctic, Himalayas (Third Pole) */}
+        <div className="absolute bottom-6 right-6 sm:bottom-10 sm:right-12 z-40 flex items-center gap-1.5 p-1 rounded-full border border-white/10 bg-[#0D1422]/95 backdrop-blur-md shadow-xl">
           <button
             onClick={() => setPolarView('antarctic')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
@@ -702,7 +744,7 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
             }`}
           >
             <Globe className="w-3.5 h-3.5" />
-            <span>Antarctica (Maitri & Bharati)</span>
+            <span>Antarctica</span>
           </button>
 
           <button
@@ -716,7 +758,21 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>Arctic (Himadri)</span>
+            <span>Arctic</span>
+          </button>
+
+          <button
+            onClick={() => setPolarView('himalayas')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
+              polarView === 'himalayas'
+                ? isLight
+                  ? 'bg-white text-[#0A7C8C] shadow-sm font-semibold'
+                  : 'bg-[#7FE7F5]/20 text-[#7FE7F5] border border-[#7FE7F5]/30 shadow-sm font-semibold'
+                : 'text-[#8592A6] hover:text-[#EAF0F8]'
+            }`}
+          >
+            <Mountain className="w-3.5 h-3.5" />
+            <span>Himalayas (Himansh)</span>
           </button>
         </div>
       </div>
@@ -817,9 +873,38 @@ export const PolarGlobeHero = ({ onSearch, className = '' }) => {
               globeReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             } ${isLight ? 'border-slate-200' : 'border-white/10'}`}
           >
-            <AnimatedStat endValue="48,200" label="Documents" duration={1400} delay={600} isLight={isLight} />
-            <AnimatedStat endValue="312" label="Datasets" duration={1400} delay={700} isLight={isLight} />
-            <AnimatedStat endValue="43" label="Expeditions" duration={1400} delay={800} isLight={isLight} />
+            {/* LIVE from backend — DhruvKosh repository total */}
+            <HeroLiveStat
+              value={liveDocuments}
+              label="Documents"
+              sourceLabel="Live count from the DhruvKosh repository"
+              duration={1400}
+              delay={600}
+              isLight={isLight}
+            />
+            {/* NCPOR verified public record */}
+            <HeroLiveStat
+              value={verifiedFacts.antarcticExpeditions.value}
+              label={verifiedFacts.antarcticExpeditions.shortLabel}
+              sourceLabel={`${verifiedFacts.antarcticExpeditions.note} — Source: NCPOR (ncpor.res.in/news/view/815)`}
+              duration={1400}
+              delay={700}
+              isLight={isLight}
+            />
+            {/* Derived from stations.js active entries */}
+            <HeroLiveStat
+              value={verifiedFacts.activeStations.value}
+              label={verifiedFacts.activeStations.shortLabel}
+              sourceLabel={`${verifiedFacts.activeStations.note} — Source: NCPOR Operational Stations`}
+              duration={1400}
+              delay={800}
+              isLight={isLight}
+            />
+          </div>
+
+          {/* Live status indicator */}
+          <div className="pt-2">
+            <LiveIndicator dataUpdatedAt={dataUpdatedAt} isError={statsError} />
           </div>
 
         </div>

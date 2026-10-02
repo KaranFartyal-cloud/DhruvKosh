@@ -15,12 +15,12 @@ const ExpeditionsList = React.lazy(() => import('./pages/ExpeditionsList'));
 const ExpeditionDetail = React.lazy(() => import('./pages/ExpeditionDetail'));
 const PolarGuide = React.lazy(() => import('./components/PolarGuide'));
 
-// Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
-      retry: false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      retry: 2,
     },
   },
 });

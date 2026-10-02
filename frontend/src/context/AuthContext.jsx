@@ -1,0 +1,91 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../config/firebase';
+import { authAPI } from '../utils/api';
+
+const AuthContext = createContext();
+
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
+  return ctx;
+};
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  // On mount, restore session from localStorage
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const storedUser = localStorage.getItem('user');
+      if (token && storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleAuthSuccess = (data, redirectTo = '/') => {
+    console.log('Auth success data:', data);
+    if (data.access_token) {
+      localStorage.setItem('auth_token', data.access_token);
+      console.log('Token saved to localStorage');
+    }
+    if (data.user) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
+      console.log('User saved:', data.user);
+    }
+    console.log('Navigating to:', redirectTo);
+    navigate(redirectTo, { replace: true });
+  };
+
+  const login = async (email, password, redirectTo = '/') => {
+    const res = await authAPI.login(email, password);
+    handleAuthSuccess(res.data, redirectTo);
+    return res.data;
+  };
+
+  const signup = async (data) => {
+    const res = await authAPI.register(data);
+    return res.data;
+  };
+
+  // Legacy: used by the old @react-oauth/google button (kept for compatibility)
+  const googleSignIn = async (credential, redirectTo = '/') => {
+    const res = await authAPI.googleLogin(credential);
+    handleAuthSuccess(res.data, redirectTo);
+    return res.data;
+  };
+
+  // Firebase Google Sign-In: opens Google popup via Firebase, then exchanges
+  // the Firebase ID token with the backend for an app JWT.
+  const firebaseGoogleSignIn = async (redirectTo = '/') => {
+    const result = await signInWithPopup(auth, googleProvider);
+    const idToken = await result.user.getIdToken();
+    const res = await authAPI.googleLogin(idToken);
+    handleAuthSuccess(res.data, redirectTo);
+    return res.data;
+  };
+
+  const logout = () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+    setUser(null);
+    navigate('/login', { replace: true });
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, signup, googleSignIn, firebaseGoogleSignIn, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
