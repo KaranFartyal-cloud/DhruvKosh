@@ -403,7 +403,7 @@ async def chat_with_expedition(
                 f"Animations: IDLE, BREATHING, SPEAKING, EXPLAIN, POINT, DISMISSING, HANDGESTURE, WAVE, NOD, HARDNOD, VICTORY, CHEER, CLAP, LAUGH, QUIZ_CORRECT, QUIZ_WRONG, THINKING, TYPING, SAD, DEFEAT, ANGRY, ANNOYED, SHAKENO, SARCASTIC, THANKFUL, SURPRISED, YAWN, SIGH, LOOKAROUND, LOOKAWAY, NERVOUS, SHY, COVERMOUTH, BEINGCOCKY, STEPBACK, DANCE."
             )
             completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="llama-3.1-70b-versatile",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": request.message}
