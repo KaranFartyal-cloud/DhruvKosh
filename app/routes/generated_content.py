@@ -470,10 +470,25 @@ async def chat_with_expedition(
         action = "WAVE"
         emotion = "FRIENDLY"
 
+    audio_b64 = None
+    try:
+        import edge_tts
+        import base64
+        # Generate ultra-realistic TTS audio dynamically via edge-tts (free Microsoft Azure Neural TTS)
+        communicate = edge_tts.Communicate(reply, "en-US-AriaNeural", rate="+10%")
+        audio_data = b""
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_data += chunk["data"]
+        audio_b64 = base64.b64encode(audio_data).decode('utf-8')
+    except Exception as e:
+        print(f"[Mavis/TTS ERROR] {type(e).__name__}: {e}")
+
     return {
         "reply": reply,
         "action": action,
         "animation": action,
-        "emotion": emotion
+        "emotion": emotion,
+        "audio_base64": audio_b64
     }
 
