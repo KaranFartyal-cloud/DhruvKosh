@@ -350,14 +350,14 @@ async def chat_with_expedition(
         except Exception:
             context = exp.summary or ""
 
-    groq_api_key = os.getenv("GROQ_API_KEY")
+    mavis_api_key = os.getenv("MAVIS_AI_KEY")
     reply = ""
     action = "SPEAKING"
     emotion = "FRIENDLY"
 
-    if groq_api_key:
+    if mavis_api_key:
         try:
-            client = Groq(api_key=groq_api_key)
+            client = Groq(api_key=mavis_api_key)
             
             if request.user_type == "kid":
                 mode_instructions = (
