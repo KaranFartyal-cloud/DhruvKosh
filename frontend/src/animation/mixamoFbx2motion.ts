@@ -1,11 +1,20 @@
 import * as THREE from "three";
 import { VRM, VRMHumanBoneName } from "@pixiv/three-vrm";
 
-export function mixamoFbx2motion(fbxObject: THREE.Group, vrm: VRM, isReversedModel: boolean = false) {
-  const clip = fbxObject.animations[0];
+export interface MotionExpression {
+  clip: THREE.AnimationClip;
+}
+
+export function mixamoFbx2motion(
+  fbxObject: THREE.Group,
+  vrm: VRM,
+  onProgress?: (name: string, progress: number) => void
+): MotionExpression {
+  const clip = THREE.AnimationClip.findByName(fbxObject.animations, "mixamo.com");
+  
   if (!clip) {
-    console.error(" No animation found in FBX");
-    return new THREE.AnimationClip("error", 0, []);
+      console.error("No mixamo.com animation found in FBX");
+      return { clip: new THREE.AnimationClip("error", 0, []) };
   }
 
   const tracks: THREE.KeyframeTrack[] = [];
@@ -14,161 +23,63 @@ export function mixamoFbx2motion(fbxObject: THREE.Group, vrm: VRM, isReversedMod
   const _quatA = new THREE.Quaternion();
   const _vec3 = new THREE.Vector3();
 
-  const mixamoHips =
-    fbxObject.getObjectByName("mixamorigHips") ||
-    fbxObject.getObjectByName("mixamorig:Hips");
-
-  if (!mixamoHips) {
-    console.error(" Could not find Hips bone in FBX");
-    return new THREE.AnimationClip("error", 0, []);
-  }
-
-  // ==========================================
-  //  STANDARD MODEL GROUNDING LOGIC
-  // (Pairo ki asli lambai naap kar scale karna)
-  // ==========================================
-  const motionHipsHeight = mixamoHips.position.y;
+  // Adjust Hips Height
+  const motionHipsHeight = fbxObject.getObjectByName("mixamorigHips")?.position.y ?? 1;
   const vrmHips = vrm.humanoid?.getNormalizedBoneNode("hips");
-  const vrmLeftFoot = vrm.humanoid?.getNormalizedBoneNode("leftFoot");
-
-  let vrmHipsHeight = 1.0;
-
-  if (vrmHips && vrmLeftFoot) {
-    const hipsY = vrmHips.getWorldPosition(_vec3).y;
-    const footY = vrmLeftFoot.getWorldPosition(_vec3).y;
-    vrmHipsHeight = Math.abs(hipsY - footY);
-  } else if (vrmHips) {
-    const vrmHipsY = vrmHips.getWorldPosition(_vec3).y;
-    const vrmRootY = vrm.scene.getWorldPosition(_vec3).y;
-    vrmHipsHeight = Math.abs(vrmHipsY - vrmRootY);
-  }
-
-  const hipsPositionScale =
-    motionHipsHeight === 0 ? 1 : vrmHipsHeight / motionHipsHeight;
+  const vrmHipsY = vrmHips?.getWorldPosition(_vec3).y ?? 0;
+  const vrmRootY = vrm.scene.getWorldPosition(_vec3).y;
+  const vrmHipsHeight = Math.abs(vrmHipsY - vrmRootY);
+  const hipsPositionScale = vrmHipsHeight / (motionHipsHeight === 0 ? 1 : motionHipsHeight);
 
   clip.tracks.forEach((track) => {
-    const trackName = track.name.replace("mixamorig:", "mixamorig");
-    const trackSplitted = trackName.split(".");
+    const trackSplitted = track.name.split(".");
     const mixamoRigName = trackSplitted[0];
-
     const vrmBoneName = mixamoVRMRigMap[mixamoRigName];
-    if (!vrmBoneName) return;
+    const vrmNodeName = vrm.humanoid?.getNormalizedBoneNode(vrmBoneName)?.name;
 
-    const vrmNode = vrm.humanoid?.getNormalizedBoneNode(vrmBoneName);
-    if (!vrmNode) return;
+    if (vrmNodeName != null) {
+      const propertyName = trackSplitted[1];
+      const mixamoRigNode = fbxObject.getObjectByName(mixamoRigName);
 
-    const vrmNodeName = vrmNode.name;
-    const propertyName = trackSplitted[1];
+      if (track instanceof THREE.QuaternionKeyframeTrack) {
+        mixamoRigNode?.getWorldQuaternion(restRotationInverse).invert();
+        mixamoRigNode?.parent?.getWorldQuaternion(parentRestWorldRotation);
 
-    const mixamoRigNode =
-      fbxObject.getObjectByName(mixamoRigName) ||
-      fbxObject.getObjectByName(mixamoRigName.replace("mixamorig", "mixamorig:"));
-
-    if (!mixamoRigNode) return;
-
-    // =============================
-    //  QUATERNION TRACK FIX
-    // =============================
-    if (track instanceof THREE.QuaternionKeyframeTrack) {
-      const newValues: number[] = [];
-
-      mixamoRigNode.getWorldQuaternion(restRotationInverse).invert();
-      mixamoRigNode.parent?.getWorldQuaternion(parentRestWorldRotation);
-
-      for (let i = 0; i < track.values.length; i += 4) {
-        _quatA.fromArray(track.values, i);
-        _quatA.premultiply(parentRestWorldRotation).multiply(restRotationInverse);
-        _quatA.normalize();
-
-        if (_quatA.lengthSq() === 0 || !Number.isFinite(_quatA.x)) {
-          _quatA.set(0, 0, 0, 1);
+        for (let i = 0; i < track.values.length; i += 4) {
+          const flatQuaternion = track.values.slice(i, i + 4);
+          _quatA.fromArray(flatQuaternion);
+          _quatA.premultiply(parentRestWorldRotation).multiply(restRotationInverse);
+          _quatA.toArray(flatQuaternion);
+          flatQuaternion.forEach((v, index) => {
+            track.values[index + i] = v;
+          });
         }
 
-        if (
-          vrmBoneName === "spine" || vrmBoneName === "chest" ||
-          vrmBoneName === "upperChest" || vrmBoneName === "neck" ||
-          vrmBoneName === "head"
-        ) {
-          const e = new THREE.Euler().setFromQuaternion(_quatA, "XYZ");
-          e.x = THREE.MathUtils.clamp(e.x, -1.5, 1.5);
-          e.y = THREE.MathUtils.clamp(e.y, -1.5, 1.5);
-          e.z = THREE.MathUtils.clamp(e.z, -1.0, 1.0);
-          _quatA.setFromEuler(e);
-          _quatA.normalize();
-        }
-
-        // ==========================================
-        //  TARGETED BONE ANIMATION (Custom Modifiers)
-        // ==========================================
-        const isLowerArm = vrmBoneName === "leftLowerArm" || vrmBoneName === "rightLowerArm";
-        const isUpperArm = vrmBoneName === "leftUpperArm" || vrmBoneName === "rightUpperArm";
-
-        if (isReversedModel && (isLowerArm || isUpperArm)) {
-          //  MAGIC FIX: Sirf hatho ke liye X aur Z ko flip kar diya!
-          // Taaki hath peeche jane ke bajaye aage ki taraf (sahi disha me) mude.
-          newValues.push(-_quatA.x, _quatA.y, -_quatA.z, _quatA.w);
-        } else {
-          // STANDARD VRM 0.x Mapping (Baki sab haddiyon ke liye)
-          if (vrm.meta?.metaVersion === "0") {
-            newValues.push(-_quatA.x, -_quatA.y, -_quatA.z, _quatA.w);
-          } else {
-            newValues.push(_quatA.x, _quatA.y, _quatA.z, _quatA.w);
-          }
-        }
+        tracks.push(
+          new THREE.QuaternionKeyframeTrack(
+            `${vrmNodeName}.${propertyName}`,
+            track.times,
+            track.values.map((v, i) => (vrm.meta?.metaVersion === "0" && i % 2 === 0 ? -v : v))
+          )
+        );
+      } else if (track instanceof THREE.VectorKeyframeTrack) {
+        const value = track.values.map(
+          (v, i) => (vrm.meta?.metaVersion === "0" && i % 3 !== 1 ? -v : v) * hipsPositionScale
+        );
+        tracks.push(
+          new THREE.VectorKeyframeTrack(
+            `${vrmNodeName}.${propertyName}`,
+            track.times,
+            value
+          )
+        );
       }
-
-      tracks.push(
-        new THREE.QuaternionKeyframeTrack(`${vrmNodeName}.${propertyName}`, track.times.slice(), newValues)
-      );
-    }
-
-    // =============================
-    //  POSITION TRACK (The TRUE Anti-Slip / Root Motion Logic)
-    // =============================
-    else if (track instanceof THREE.VectorKeyframeTrack) {
-      const newValues: number[] = [];
-
-      for (let i = 0; i < track.values.length; i += 3) {
-        let animX = track.values[i];
-        let animY = track.values[i + 1];
-        let animZ = track.values[i + 2];
-
-        //  DELTA Y LOGIC (Ye usko hawa me jhulne nahi dega)
-        // Mixamo ki haddi apni jagah se kitni upar-neeche hui (Difference)
-        let dy = animY - motionHipsHeight; 
-        
-        // Tere model ke asli leg-length (vrmHipsHeight) mein sirf motion ka difference jodo.
-        let finalY = vrmHipsHeight + (dy * hipsPositionScale);
-        
-        // ANTI-GRAVITY CLAMP: Character apni position se neeche nahi jayega
-        if (finalY < vrmHipsHeight) {
-          finalY = vrmHipsHeight;
-        }
-        
-        let finalX = animX * hipsPositionScale;
-        let finalZ = animZ * hipsPositionScale;
-
-        //  DIRECTION FIX
-        if (isReversedModel) {
-          // X aur Z ko zero (0) MAT KARNA! Warna Moonwalk/Slip hoga. 
-          // Inko minus karo taaki wo sahi disha me root motion kare.
-          finalX = -finalX;
-          finalZ = -finalZ;
-        } else if (vrm.meta?.metaVersion === "0") {
-          finalX = -finalX;
-          finalZ = -finalZ;
-        }
-
-        newValues.push(finalX, finalY, finalZ);
-      }
-
-      tracks.push(
-        new THREE.VectorKeyframeTrack(`${vrmNodeName}.${propertyName}`, track.times.slice(), newValues)
-      );
     }
   });
 
-  return new THREE.AnimationClip(clip.name, clip.duration, tracks);
+  return {
+    clip: new THREE.AnimationClip("vrmAnimation", clip.duration, tracks),
+  };
 }
 
 const mixamoVRMRigMap: Record<string, VRMHumanBoneName> = {
@@ -182,8 +93,8 @@ const mixamoVRMRigMap: Record<string, VRMHumanBoneName> = {
   mixamorigLeftArm: "leftUpperArm",
   mixamorigLeftForeArm: "leftLowerArm",
   mixamorigLeftHand: "leftHand",
-  mixamorigLeftHandThumb1: "leftThumbMetacarpal",
-  mixamorigLeftHandThumb2: "leftThumbProximal",
+  mixamorigLeftHandThumb1: "leftThumbProximal",
+  mixamorigLeftHandThumb2: "leftThumbMetacarpal",
   mixamorigLeftHandThumb3: "leftThumbDistal",
   mixamorigLeftHandIndex1: "leftIndexProximal",
   mixamorigLeftHandIndex2: "leftIndexIntermediate",
@@ -201,8 +112,8 @@ const mixamoVRMRigMap: Record<string, VRMHumanBoneName> = {
   mixamorigRightArm: "rightUpperArm",
   mixamorigRightForeArm: "rightLowerArm",
   mixamorigRightHand: "rightHand",
-  mixamorigRightHandThumb1: "rightThumbMetacarpal",
-  mixamorigRightHandThumb2: "rightThumbProximal",
+  mixamorigRightHandThumb1: "rightThumbProximal",
+  mixamorigRightHandThumb2: "rightThumbMetacarpal",
   mixamorigRightHandThumb3: "rightThumbDistal",
   mixamorigRightHandIndex1: "rightIndexProximal",
   mixamorigRightHandIndex2: "rightIndexIntermediate",
@@ -219,7 +130,9 @@ const mixamoVRMRigMap: Record<string, VRMHumanBoneName> = {
   mixamorigLeftUpLeg: "leftUpperLeg",
   mixamorigLeftLeg: "leftLowerLeg",
   mixamorigLeftFoot: "leftFoot",
+  mixamorigLeftToeBase: "leftToes",
   mixamorigRightUpLeg: "rightUpperLeg",
   mixamorigRightLeg: "rightLowerLeg",
   mixamorigRightFoot: "rightFoot",
+  mixamorigRightToeBase: "rightToes",
 };

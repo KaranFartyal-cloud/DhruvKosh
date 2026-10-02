@@ -28,9 +28,17 @@ class ErrorBoundary extends Component {
                   </svg>
                 </div>
                 <h2 className="text-lg font-semibold mb-2">Something went wrong</h2>
-                <p className={`text-sm mb-6 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                <p className={`text-sm mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                   We encountered an unexpected error rendering this page.
                 </p>
+                {this.state.error && (
+                  <div className="text-xs text-left bg-black/50 p-4 rounded-lg mb-6 overflow-auto max-h-48 border border-red-500/20">
+                    <p className="text-red-400 font-semibold mb-1">{this.state.error.name || 'Error'}: {this.state.error.message}</p>
+                    {this.state.error.stack && (
+                      <pre className="text-[11px] text-slate-400 font-mono whitespace-pre-wrap">{this.state.error.stack}</pre>
+                    )}
+                  </div>
+                )}
                 <button
                   onClick={() => window.location.reload()}
                   className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${
