@@ -321,6 +321,8 @@ def get_public_generated_content(
     return query.order_by(GeneratedContent.published_at.desc()).all()
 
 
+EXP_CONTEXT_CACHE = {}
+
 from pydantic import BaseModel
 from typing import Optional
 
@@ -346,10 +348,22 @@ async def chat_with_expedition(
     exp_name = "Indian Polar Research Program"
     if exp:
         exp_name = exp.name
-        try:
-            context = gather_source_material(expedition_id, db)
-        except Exception:
-            context = exp.summary or ""
+        
+        # FAST PATH: Skip heavy RAG for Kid mode (general quizzes don't need dataset abstracts)
+        if request.user_type == "kid":
+            context = "Focus on simple, general knowledge polar science quizzes."
+        else:
+            global EXP_CONTEXT_CACHE
+            import time
+            now = time.time()
+            if expedition_id in EXP_CONTEXT_CACHE and (now - EXP_CONTEXT_CACHE[expedition_id]['time'] < 3600):
+                context = EXP_CONTEXT_CACHE[expedition_id]['data']
+            else:
+                try:
+                    context = gather_source_material(expedition_id, db)
+                    EXP_CONTEXT_CACHE[expedition_id] = {'data': context, 'time': now}
+                except Exception:
+                    context = exp.summary or ""
 
     mavis_api_key = os.getenv("MAVIS_AI_KEY")
     reply = ""
@@ -470,10 +484,25 @@ async def chat_with_expedition(
         action = "WAVE"
         emotion = "FRIENDLY"
 
+    audio_b64 = None
+    try:
+        import edge_tts
+        import base64
+        # Generate ultra-realistic TTS audio dynamically via edge-tts (free Microsoft Azure Neural TTS)
+        communicate = edge_tts.Communicate(reply, "en-US-AriaNeural", rate="+10%")
+        audio_data = b""
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_data += chunk["data"]
+        audio_b64 = base64.b64encode(audio_data).decode('utf-8')
+    except Exception as e:
+        print(f"[Mavis/TTS ERROR] {type(e).__name__}: {e}")
+
     return {
         "reply": reply,
         "action": action,
         "animation": action,
-        "emotion": emotion
+        "emotion": emotion,
+        "audio_base64": audio_b64
     }
 

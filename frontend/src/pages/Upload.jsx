@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import { contentAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { renderFirstPageToCanvas, extractPDFText, analyzePDFContent } from '../utils/pdfHelper';
 import { useInvalidateLiveStats } from '../hooks/useLiveStats';
+import DatasetViewer from '../polar-viz/components/DatasetViewer';
 
 /* ─── tiny icon helpers ─────────────────────────────────────────────────── */
 const Icon = ({ path, cls = 'w-5 h-5' }) => (
@@ -32,6 +34,62 @@ const PATHS = {
 const fmtSize = (bytes) => {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+/* ─── 3D Dataset Visualizer Modal ───────────────────────────────────────── */
+const DatasetVizModal = ({ file, onClose }) => {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); return () => setMounted(false); }, []);
+  useEffect(() => {
+    if (!mounted) return;
+    const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleKey);
+    // prevent body scroll while modal is open
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      document.body.style.overflow = '';
+    };
+  }, [onClose, mounted]);
+
+  if (!mounted) return null;
+  return createPortal(
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(20px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{ width: '100%', maxWidth: '72rem', maxHeight: '92vh', display: 'flex', flexDirection: 'column', borderRadius: '1rem', background: '#0d1829', border: '1px solid #1e3a5f', overflow: 'hidden', boxShadow: '0 25px 80px rgba(0,0,0,0.7)' }}>
+        {/* Modal header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.5rem', borderBottom: '1px solid #1e3a5f', background: '#060c18', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ padding: '0.5rem', borderRadius: '0.75rem', background: 'rgba(6,182,212,0.15)', border: '1px solid rgba(6,182,212,0.3)', color: '#67e8f9' }}>
+              <Icon path={PATHS.eye} cls="w-4 h-4" />
+            </div>
+            <div>
+              <p style={{ fontSize: '0.875rem', fontWeight: 700, color: '#e2f0ff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                Polar 3D Scientific Visualizer
+                <span style={{ fontSize: '0.6rem', padding: '0.1rem 0.5rem', borderRadius: '0.25rem', background: 'rgba(6,182,212,0.15)', color: '#67e8f9', fontFamily: 'monospace' }}>3D ENGINE</span>
+              </p>
+              <p style={{ fontSize: '0.75rem', color: '#6b8fa3', marginTop: '0.1rem' }}>{file.name} — {fmtSize(file.size)}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{ padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #1e3a5f', color: '#6b8fa3', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'all 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#4a9eff'; e.currentTarget.style.color = '#e2f0ff'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e3a5f'; e.currentTarget.style.color = '#6b8fa3'; }}
+          >
+            <Icon path={PATHS.x} cls="w-4 h-4" />
+          </button>
+        </div>
+        {/* Scrollable body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', background: '#040811' }}>
+          <DatasetViewer file={file} height={560} onClose={onClose} />
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
 };
 
 /* ─── Processing step indicator ────────────────────────────────────────── */
@@ -120,6 +178,7 @@ const Upload = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showVizModal, setShowVizModal] = useState(false);
 
   // Block normal users from uploading
   const canUpload = isAdmin || isResearcher;
@@ -150,27 +209,46 @@ const Upload = () => {
       report: 'application/pdf',
       photo: 'image/jpeg,image/png,image/gif',
       video: 'video/mp4,video/webm',
-      dataset: '.csv,.json,.xlsx',
+      dataset: '.csv,.json,.xlsx,.cnv,.tsv,.txt,.nc',
       publication: 'application/pdf'
     };
     return map[ct] || '*/*';
   };
 
   const isPDFType = (ct) => ct === 'report' || ct === 'publication';
+  
+  const isDataset = (file, ct) => {
+    if (!file) return false;
+    if (ct === 'dataset') return true;
+    const name = file.name.toLowerCase();
+    return name.endsWith('.csv') || name.endsWith('.tsv') || name.endsWith('.xlsx') || 
+           name.endsWith('.json') || name.endsWith('.cnv') || name.endsWith('.nc') || 
+           name.endsWith('.txt');
+  };
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     setFormData(prev => ({ ...prev, [name]: files ? files[0] : value }));
   };
 
-  /* ── Process a chosen/dropped PDF ── */
+  /* ── Process a chosen/dropped File ── */
   const processFile = useCallback(async (file) => {
     if (!file) return;
 
     setFormData(prev => ({ ...prev, file }));
-    setPdfFile(file);
+    setPdfFile(file.type === 'application/pdf' ? file : null);
     setThumbnail(null);
     setOverview(null);
+
+    // Auto-detect content type if user hasn't customized it
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (['csv', 'xlsx', 'tsv', 'json', 'cnv', 'nc', 'txt'].includes(ext)) {
+      setFormData(prev => ({
+        ...prev,
+        content_type: 'dataset',
+        title: prev.title || file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, ' ')
+      }));
+    }
 
     if (!isPDFType(formData.content_type) || file.type !== 'application/pdf') return;
 
@@ -252,12 +330,12 @@ const Upload = () => {
     }
   };
 
-  const handleDownloadPDF = () => {
-    if (!pdfFile) return;
-    const url = URL.createObjectURL(pdfFile);
+  const handleDownloadFile = () => {
+    if (!formData.file) return;
+    const url = URL.createObjectURL(formData.file);
     const a = document.createElement('a');
     a.href = url;
-    a.download = pdfFile.name;
+    a.download = formData.file.name;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
@@ -301,17 +379,23 @@ const Upload = () => {
     );
   }
 
+  const isCurrentFileDataset = isDataset(formData.file, formData.content_type);
+
   return (
     <>
       {showPreviewModal && pdfFile && (
         <PDFPreviewModal file={pdfFile} onClose={() => setShowPreviewModal(false)} />
       )}
 
+      {showVizModal && formData.file && (
+        <DatasetVizModal file={formData.file} onClose={() => setShowVizModal(false)} />
+      )}
+
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-display text-ncpor-primary mb-1 tracking-tight">Upload Content</h1>
-          <p className="text-ncpor-secondary text-base">Add reports, datasets, publications, or media to the NCPOR repository.</p>
+          <p className="text-ncpor-secondary text-base">Add reports, scientific datasets, publications, or media to the NCPOR repository.</p>
         </div>
 
         {/* Alerts */}
@@ -329,9 +413,9 @@ const Upload = () => {
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* ── TOP SECTION: file zone OR pdf card ── */}
+          {/* ── TOP SECTION: file zone OR dataset card OR pdf card ── */}
           <div className="mb-6">
-            {!pdfFile ? (
+            {!formData.file ? (
               /* ── Drop Zone ── */
               <div className="space-y-3">
                 <label className="block text-xs font-semibold uppercase tracking-widest text-ncpor-secondary">File *</label>
@@ -347,12 +431,12 @@ const Upload = () => {
                   }`}
                 >
                   <div className={`mb-5 p-4 rounded-2xl border transition-all ${dragging ? 'border-ncpor-accent/40 bg-ncpor-accent/10' : 'border-ncpor-divider bg-ncpor-elevated'}`}>
-                    <Icon path={PATHS.pdf} cls={`w-8 h-8 transition-colors ${dragging ? 'text-ncpor-accent' : 'text-ncpor-muted'}`} />
+                    <Icon path={formData.content_type === 'dataset' ? PATHS.list : PATHS.pdf} cls={`w-8 h-8 transition-colors ${dragging ? 'text-ncpor-accent' : 'text-ncpor-muted'}`} />
                   </div>
                   <p className="text-ncpor-primary font-semibold text-base mb-1">
-                    {dragging ? 'Drop your file here' : 'Drag & drop your file here'}
+                    {dragging ? 'Drop your scientific file here' : 'Drag & drop your file here'}
                   </p>
-                  <p className="text-ncpor-muted text-sm mb-5">or click to browse</p>
+                  <p className="text-ncpor-muted text-sm mb-5">or click to browse local files</p>
                   <div className="px-5 py-2.5 rounded-lg border border-ncpor-divider bg-ncpor-elevated text-ncpor-secondary text-sm font-medium hover:border-ncpor-accent hover:text-ncpor-accent transition-all">
                     Choose File
                   </div>
@@ -367,6 +451,83 @@ const Upload = () => {
                   className="hidden"
                   required
                 />
+              </div>
+            ) : isCurrentFileDataset ? (
+              /* ── DATASET UPLOADED: Interactive 3D Polar Visualizer Card ── */
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-cyan-500/30 bg-gradient-to-b from-[#0a1526] to-[#040811] p-6 shadow-xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+                  
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative z-10">
+                    <div className="flex items-start sm:items-center gap-4">
+                      <div className="p-3.5 rounded-2xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 shadow-lg shadow-cyan-950/50">
+                        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="text-xs font-mono font-bold uppercase px-2.5 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                            Scientific Dataset
+                          </span>
+                          <span className="text-xs px-2.5 py-0.5 rounded-md bg-blue-500/10 text-blue-300 border border-blue-500/20 font-mono">
+                            {fmtSize(formData.file.size)}
+                          </span>
+                          <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            ✓ 3D Polar Engine Ready
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-bold text-ncpor-primary truncate max-w-xl">
+                          {formData.file.name}
+                        </h3>
+                        <p className="text-xs text-ncpor-secondary mt-0.5">
+                          CTD Profiles, Water Columns, Multidimensional Coordinates &amp; Scalar Fields enabled.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowVizModal(true); }}
+                        className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-cyan-500/25 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                        style={{ position: 'relative', zIndex: 20 }}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <span>Inspect 3D Visualisation</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleDownloadFile}
+                        className="p-3 rounded-xl border border-ncpor-divider bg-ncpor-panel text-ncpor-secondary hover:text-ncpor-primary hover:border-ncpor-primary transition-all"
+                        title="Download file"
+                      >
+                        <Icon path={PATHS.download} cls="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPdfFile(null); setThumbnail(null); setOverview(null);
+                          setFormData(prev => ({ ...prev, file: null }));
+                        }}
+                        className="p-3 rounded-xl border border-ncpor-divider bg-ncpor-panel text-ncpor-secondary hover:text-rose-400 hover:border-rose-500/40 transition-all"
+                        title="Remove file"
+                      >
+                        <Icon path={PATHS.x} cls="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Embedded Visualizer Preview — isolated so canvas doesn't block buttons above */}
+                  <div className="mt-6 pt-6 border-t border-ncpor-divider/60" style={{ position: 'relative', zIndex: 1 }}>
+                    <DatasetViewer file={formData.file} height={420} />
+                  </div>
+                </div>
               </div>
             ) : (
               /* ── PDF + Overview two-col layout ── */
@@ -409,17 +570,17 @@ const Upload = () => {
 
                     {/* Metadata strip */}
                     <div className="px-4 py-3 border-t border-ncpor-divider space-y-1.5">
-                      <p className="text-ncpor-primary text-sm font-semibold truncate leading-snug">{pdfFile.name}</p>
+                      <p className="text-ncpor-primary text-sm font-semibold truncate leading-snug">{pdfFile?.name || formData.file?.name}</p>
                       <div className="flex items-center gap-3 flex-wrap">
                         <span className="text-xs text-ncpor-secondary bg-ncpor-elevated border border-ncpor-divider px-2 py-0.5 rounded">PDF</span>
-                        <span className="text-xs text-ncpor-secondary">{fmtSize(pdfFile.size)}</span>
+                        <span className="text-xs text-ncpor-secondary">{formData.file && fmtSize(formData.file.size)}</span>
                         {numPages && <span className="text-xs text-ncpor-secondary">{numPages} pages</span>}
                       </div>
                     </div>
 
                     {/* Action buttons */}
                     <div className="flex gap-2 px-4 pb-4 pt-1">
-                      {isPDFType(formData.content_type) && (
+                      {isPDFType(formData.content_type) && pdfFile && (
                         <button
                           type="button"
                           onClick={() => setShowPreviewModal(true)}
@@ -431,7 +592,7 @@ const Upload = () => {
                       )}
                       <button
                         type="button"
-                        onClick={handleDownloadPDF}
+                        onClick={handleDownloadFile}
                         className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border border-ncpor-accent/40 text-ncpor-accent text-sm font-semibold hover:bg-ncpor-accent hover:text-[#05080F] transition-all"
                       >
                         <Icon path={PATHS.download} cls="w-4 h-4" />

@@ -18,3 +18,4 @@ atproto>=0.0.48
 google-auth>=2.30.0
 mangum>=0.17.0
 
+edge-tts==7.2.8
