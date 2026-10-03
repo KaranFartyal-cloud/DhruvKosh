@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Dataset, ModeId, WorkerResponse } from '../types/dataset';
 import { evaluateCapabilities, MODE_LABELS } from '../engine/capabilityEngine';
+import { pickScalars } from '../engine/spatial';
 import VolumeField3D from './VolumeField3D';
+import MapView from './MapView';
 
 interface Props {
   /** Pass a File (from an <input type="file"> or a drag-and-drop)... */
@@ -11,9 +13,14 @@ interface Props {
   height?: number;
 }
 
-const ORDER: ModeId[] = ['volume3D', 'verticalProfile', 'timeSeries', 'map', 'curtain', 'depthSlice', 'surfaceField',
+const ORDER: ModeId[] = ['volume3D', 'map', 'verticalProfile', 'timeSeries', 'curtain', 'depthSlice', 'surfaceField',
   'vectorField', 'histogram', 'scatter', 'surface3D', 'vectorField3D', 'isosurface3D', 'rawTable'];
-const BUILT: ModeId[] = ['volume3D', 'rawTable']; // views implemented so far
+const BUILT: ModeId[] = ['volume3D', 'map', 'rawTable']; // views implemented so far
+
+const ROLE_LABEL: Record<string, string> = {
+  latitude: 'Latitude', longitude: 'Longitude', depth: 'Depth', pressure: 'Pressure (used as depth)', elevation: 'Elevation (used as depth)',
+  time: 'Time', station: 'Station / cast', u: 'Current U', v: 'Current V', scalar: 'Measurement',
+};
 
 type State =
   | { status: 'idle' }
@@ -60,7 +67,7 @@ export default function DatasetViewer({ file, url, height = 560 }: Props) {
 
   const dataset = state.status === 'ready' ? state.dataset : undefined;
   const caps = useMemo(() => (dataset ? evaluateCapabilities(dataset) : undefined), [dataset]);
-  const scalars = dataset?.variables.filter(v => v.role === 'scalar' && v.values) ?? [];
+  const scalars = dataset ? pickScalars(dataset) : [];
 
   // choose sensible defaults once the dataset is ready
   useEffect(() => {
@@ -85,6 +92,12 @@ export default function DatasetViewer({ file, url, height = 560 }: Props) {
       </p>
       {dataset.warnings.map(w => <p key={w} style={{ color: '#8a5a00' }}>Note: {w}</p>)}
 
+      {!caps.modes.volume3D.enabled && caps.modes.map.enabled && (
+        <p style={{ background: '#fff4d6', color: '#5a4200', padding: '6px 10px', borderRadius: 6 }}>
+          {caps.modes.volume3D.reason}
+        </p>
+      )}
+
       <div role="tablist" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '8px 0' }}>
         {ORDER.filter(m => caps.modes[m].enabled).map(m => (
           <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
@@ -92,18 +105,27 @@ export default function DatasetViewer({ file, url, height = 560 }: Props) {
         ))}
       </div>
 
-      {scalars.length > 1 && mode === 'volume3D' && (
-        <label>Variable{' '}
+      {scalars.length > 0 && (mode === 'volume3D' || mode === 'map') && (
+        <label>{mode === 'map' ? 'Colour by' : 'Variable'}{' '}
           <select value={variable} onChange={e => setVariable(e.target.value)}>
+            {mode === 'map' && <option value="">(none, plain points)</option>}
             {scalars.map(v => <option key={v.name} value={v.name}>{v.longName ?? v.name}{v.unit ? ` (${v.unit})` : ''}</option>)}
           </select>
         </label>
       )}
 
       {mode === 'volume3D' && variable && <VolumeField3D dataset={dataset} variable={variable} height={height} />}
+      {mode === 'map' && <MapView dataset={dataset} variable={variable} height={height} />}
       {mode === 'rawTable' && <RawTable dataset={dataset} />}
       {mode && !BUILT.includes(mode) && <p>The {MODE_LABELS[mode].toLowerCase()} view is available for this dataset but isn't built yet.</p>}
       {!mode && <p>No views are available for this file. See the reasons below.</p>}
+
+      <details style={{ marginTop: 12 }}>
+        <summary>Detected columns ({dataset.variables.length})</summary>
+        <ul>{dataset.variables.map(v => (
+          <li key={v.name}>{v.name} → <strong>{ROLE_LABEL[v.role]}</strong>{v.unit ? ` [${v.unit}]` : ''}</li>
+        ))}</ul>
+      </details>
 
       {unavailable.length > 0 && (
         <details style={{ marginTop: 12 }}>

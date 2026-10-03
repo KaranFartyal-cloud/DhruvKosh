@@ -1,7 +1,7 @@
 export type FileFormat = 'csv' | 'esv' | 'xlsx' | 'json' | 'cnv' | 'netcdf' | 'hdf5';
 
 export type VarRole =
-  | 'latitude' | 'longitude' | 'depth' | 'pressure' | 'time' | 'station'
+  | 'latitude' | 'longitude' | 'depth' | 'pressure' | 'elevation' | 'time' | 'station'
   | 'u' | 'v'      // current vector components
   | 'scalar';      // temperature, salinity, oxygen, ...
 

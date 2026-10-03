@@ -8,14 +8,49 @@ export function getVar(ds: Dataset, role: VarRole): Variable | undefined {
   return ds.variables.find(v => v.role === role && (v.values || v.labels));
 }
 
-/** Depth in metres, positive down. Pressure (dbar) is used as ~1 m/dbar if no depth column exists. */
+/** True if the dataset has any usable vertical coordinate: depth, pressure or elevation. */
+export function hasVertical(ds: Dataset): boolean {
+  return !!(getVar(ds, 'depth') || getVar(ds, 'pressure') || getVar(ds, 'elevation'));
+}
+
+/** Depth in metres, positive down. Pressure (dbar) is used as ~1 m/dbar; elevation (positive up) is negated. */
 export function depthMetres(ds: Dataset): Float64Array | undefined {
   const v = getVar(ds, 'depth') ?? getVar(ds, 'pressure');
-  if (!v?.values) return undefined;
-  const arr = Float64Array.from(v.values);
-  const sorted = Array.from(arr).filter(Number.isFinite).sort((a, b) => a - b);
-  if (sorted.length && sorted[Math.floor(sorted.length / 2)] < 0) for (let i = 0; i < arr.length; i++) arr[i] = -arr[i];
-  return arr;
+  if (v?.values) {
+    const arr = Float64Array.from(v.values);
+    const sorted = Array.from(arr).filter(Number.isFinite).sort((a, b) => a - b);
+    if (sorted.length && sorted[Math.floor(sorted.length / 2)] < 0) for (let i = 0; i < arr.length; i++) arr[i] = -arr[i];
+    return arr;
+  }
+  const e = getVar(ds, 'elevation');
+  return e?.values ? Float64Array.from(e.values, x => -x) : undefined;
+}
+
+const ID_LIKE = /^(id|index|idx|row|rownum|no|sr|srno|n|count|flag|qc\w*)$|(^|[_ ])(flag|qc|id)([_ ]|$)/i;
+const PREFERRED = /temp|sal|oxy|chl|fluor|dens|turb|nitrat|phosph|silic|ice|conc|speed|anomal|ph\b/i;
+
+/** Numeric measurement columns worth colouring by: not coordinates/IDs/flags, not constant. Best candidates first. */
+export function pickScalars(ds: Dataset): Variable[] {
+  const usable = (v: Variable) => v.role === 'scalar' && !ID_LIKE.test(v.name.trim()) &&
+    (v.values ? v.min !== undefined && v.max !== undefined && v.max > v.min : ds.layout === 'gridded' && v.dims.length >= 2);
+  const score = (v: Variable) => Number(PREFERRED.test(`${v.name} ${v.longName ?? ''}`));
+  return ds.variables.filter(usable).sort((a, b) => score(b) - score(a));
+}
+
+/** Latitude/longitude (and optionally one scalar) for 2D maps. Longitudes are unwrapped across the antimeridian. */
+export function extractLatLon(ds: Dataset, scalarName?: string) {
+  const lat = getVar(ds, 'latitude')?.values, lon = getVar(ds, 'longitude')?.values;
+  if (!lat || !lon) return undefined;
+  const val = scalarName ? ds.variables.find(v => v.name === scalarName)?.values : undefined;
+  const keep: number[] = [];
+  for (let i = 0; i < lat.length; i++) if (Number.isFinite(lat[i]) && Number.isFinite(lon[i]) && Math.abs(lat[i]) <= 90) keep.push(i);
+  if (!keep.length) return undefined;
+  const lon0 = lon[keep[0]];
+  return {
+    lat: Float32Array.from(keep, i => lat[i]),
+    lon: Float32Array.from(keep, i => (((lon[i] - lon0 + 540) % 360) - 180) + lon0),
+    values: val ? Float32Array.from(keep, i => (Number.isFinite(val[i]) ? val[i] : NaN)) : undefined,
+  };
 }
 
 /** One integer id per row identifying the cast/station. Uses station labels, else 0.01° lat/lon cells. */
@@ -155,6 +190,7 @@ export function adaptiveSample(p: Points, max: number): Int32Array {
   if (n <= max) return Int32Array.from({ length: n }, (_, i) => i);
   const b = bounds(p);
   const diag = Math.hypot(b.max[0] - b.min[0], b.max[1] - b.min[1], (b.max[2] - b.min[2]) * 100);
+  if (!(diag > 0)) return Int32Array.from({ length: max }, (_, i) => i);
   const thin = (cell: number) => {
     const seen = new Set<number>(), keep: number[] = [];
     for (let i = 0; i < n; i++) {

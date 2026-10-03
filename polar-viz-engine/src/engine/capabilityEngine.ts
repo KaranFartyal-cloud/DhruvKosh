@@ -1,5 +1,5 @@
 import type { CapabilityConfig, CapabilityMap, Capability, Dataset, DensityReport, ModeId } from '../types/dataset';
-import { castIds, coverageFraction, depthMetres, getVar, toLocalXYZ } from './spatial';
+import { castIds, coverageFraction, depthMetres, getVar, hasVertical, pickScalars, toLocalXYZ } from './spatial';
 
 export const DEFAULT_CONFIG: CapabilityConfig = {
   minPoints3D: 100, minCasts3D: 4, minCoverage3D: 0.15, maxPointsGPU: 100_000, zScale: 100, defaultRadiusKm: 50,
@@ -15,7 +15,7 @@ export function checkDensity(ds: Dataset, cfg: CapabilityConfig = DEFAULT_CONFIG
   const lat = getVar(ds, 'latitude'), lon = getVar(ds, 'longitude'), depth = depthMetres(ds);
 
   if (ds.layout === 'gridded') {
-    const axes = ds.variables.filter(v => ['latitude', 'longitude', 'depth', 'pressure'].includes(v.role) && v.values && v.dims.length === 1);
+    const axes = ds.variables.filter(v => ['latitude', 'longitude', 'depth', 'pressure', 'elevation'].includes(v.role) && v.values && v.dims.length === 1);
     const ok3 = axes.length >= 3 && axes.every(a => a.count >= 4);
     return { passed: ok3, points: axes.reduce((n, a) => n * a.count, 1), casts: 0, coverage: ok3 ? 1 : 0, radiusKm: 0,
       details: ok3 ? 'Regular lat/lon/depth grid. Missing (NaN) cells are not interpolated.' : 'Gridded file needs lat, lon and depth axes with at least 4 steps each.' };
@@ -43,8 +43,8 @@ export function checkDensity(ds: Dataset, cfg: CapabilityConfig = DEFAULT_CONFIG
 export function evaluateCapabilities(ds: Dataset, partial: Partial<CapabilityConfig> = {}) {
   const cfg = { ...DEFAULT_CONFIG, ...partial };
   const has = (r: Parameters<typeof getVar>[1]) => !!getVar(ds, r);
-  const scalars = ds.variables.filter(v => v.role === 'scalar' && v.values);
-  const vertical = has('depth') || has('pressure');
+  const scalars = pickScalars(ds);
+  const vertical = hasVertical(ds);
   const horizontal = has('latitude') && has('longitude');
   const uv = has('u') && has('v');
   const tabular = ds.layout === 'tabular';
@@ -55,7 +55,9 @@ export function evaluateCapabilities(ds: Dataset, partial: Partial<CapabilityCon
   m.scatter = scalars.length + (vertical ? 1 : 0) >= 2 ? ok() : no('Needs at least two numeric variables.');
   m.verticalProfile = vertical && scalars.length ? ok() : no('Needs depth or pressure plus one scalar variable.');
   m.timeSeries = has('time') && scalars.length ? ok() : no('Needs a time variable plus one scalar variable.');
-  m.map = horizontal ? ok() : no('Needs latitude and longitude.');
+  m.map = horizontal
+    ? ok(scalars.length ? `Positions coloured by ${scalars[0].name}.` : 'Plots the positions (no numeric measurement column found to colour by).')
+    : no('Needs latitude and longitude columns.');
   m.surfaceField = horizontal && scalars.length ? ok() : no('Needs latitude, longitude and one scalar variable.');
   m.vectorField = uv && horizontal ? ok() : no('Needs U and V current components plus latitude and longitude.');
 
@@ -76,16 +78,26 @@ export function evaluateCapabilities(ds: Dataset, partial: Partial<CapabilityCon
     m.curtain = no(why); m.depthSlice = no(why);
   }
 
-  // 3D: only if the geometry is dense enough to avoid misleading artefacts
-  const density = checkDensity(ds, cfg);
-  const gate = (base: boolean, need: string): Capability =>
-    !base ? no(need) : density.passed ? ok(density.details) : no(density.details);
-  m.surface3D = gate(horizontal && scalars.length > 0, 'Needs lat, lon and a scalar variable.');
-  m.volume3D = gate(horizontal && vertical && scalars.length > 0, 'Needs lat, lon, depth/pressure and a scalar variable.');
+  // 3D: needs a third spatial dimension, and only if the geometry is dense enough to avoid misleading artefacts
+  const density = horizontal && vertical ? checkDensity(ds, cfg) : undefined;
+  const gate3D = (needs: 'scalar' | 'vectors'): Capability => {
+    const missing: string[] = [];
+    if (!horizontal) missing.push('latitude/longitude columns');
+    if (!vertical) missing.push('depth, pressure or elevation column (the third spatial dimension)');
+    if (needs === 'scalar' && !scalars.length) missing.push('numeric measurement column to colour by');
+    if (needs === 'vectors' && !uv) missing.push('U and V current-component columns');
+    if (missing.length) {
+      return no(`3D isn't available because this dataset has no ${missing.join(' and no ')}.` +
+        (horizontal ? ' The 2D map of the positions is available instead.' : ''));
+    }
+    return density!.passed ? ok(density!.details) : no(density!.details);
+  };
+  m.surface3D = gate3D('scalar');
+  m.volume3D = gate3D('scalar');
   m.isosurface3D = m.volume3D;
-  m.vectorField3D = gate(horizontal && vertical && uv, 'Needs U, V, lat, lon and depth/pressure.');
+  m.vectorField3D = gate3D('vectors');
 
-  return { modes: m, density, config: cfg };
+  return { modes: m, density, config: cfg, scalars: scalars.map(v => v.name) };
 }
 
 export const MODE_LABELS: Record<ModeId, string> = {

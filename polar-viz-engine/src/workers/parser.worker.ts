@@ -6,17 +6,39 @@ const progress = (id: string, stage: string, fraction: number) => post({ type: '
 
 // ---------- variable auto-detection ----------
 
+/** Split a column name into lowercase words: "Depth_m" / "depthM" / "DEPTH (m)" -> ["depth","m"]. */
+const words = (s: string) => s.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+const anyOf = (w: string[], ...c: string[]) => c.some(x => w.includes(x));
+
+/**
+ * Semantic role detection from the column name, long name and unit. Matches whole words, so
+ * "Latitude", "LAT", "lat_deg", "Station Latitude", "depth_m", "Pressure (dbar)", "elev" all resolve
+ * without the user renaming anything. Values are sanity-checked afterwards in validateRoles().
+ */
 export function detectRole(name: string, longName = '', unit = ''): VarRole {
-  const n = name.toLowerCase().trim(), s = `${n} ${longName.toLowerCase()}`, u = unit.toLowerCase();
-  if (/\blat(itude)?\b/.test(s) || u === 'degrees_north' || n === 'y_lat') return 'latitude';
-  if (/\blon(g|gitude)?\b/.test(s) || u === 'degrees_east') return 'longitude';
-  if (/^pr(dm|sm|de)?$|pressure|^pres$|^p_?db(ar)?$/.test(n) || /pressure/.test(longName.toLowerCase()) || u === 'dbar' || u === 'db') return 'pressure';
-  if (/^dep|depth|^z$|^lev(el)?$/.test(n) || /depth/.test(longName.toLowerCase())) return 'depth';
-  if (/^time|^date|timestamp|julian|^t$|^elapsed/.test(n) || /\bsince\b/.test(u)) return 'time';
-  if (/station|^stn|^cast|profile_?id|^sta$/.test(n)) return 'station';
+  const nw = words(name), lw = words(longName), all = [...nw, ...lw];
+  const u = unit.toLowerCase().trim(), n = name.toLowerCase().trim();
+  if (anyOf(all, 'latitude', 'latitudes') || anyOf(nw, 'lat', 'lats') || /^(deg(ree)?s?[_ ]?n(orth)?|°\s?n)$/.test(u)) return 'latitude';
+  if (anyOf(all, 'longitude', 'longitudes') || anyOf(nw, 'lon', 'long', 'lng', 'lons') || /^(deg(ree)?s?[_ ]?e(ast)?|°\s?e)$/.test(u)) return 'longitude';
+  const atmospheric = /^(hpa|mbar|mb|pa|kpa|bar|atm)$/.test(u);
+  if (!atmospheric && (anyOf(all, 'pressure') || anyOf(nw, 'press', 'pres', 'prdm', 'prsm', 'pr', 'dbar') || u === 'dbar' || u === 'db')) return 'pressure';
+  if (nw.some(x => /^dep(th|sm|sf)?$/.test(x)) || anyOf(lw, 'depth') || (nw.length === 1 && nw[0] === 'z')) return 'depth';
+  if (anyOf(nw, 'elevation', 'elev', 'altitude', 'alt') || anyOf(lw, 'elevation', 'altitude')) return 'elevation';
+  if (anyOf(nw, 'time', 'date', 'datetime', 'timestamp', 'juld', 'julian', 'elapsed') || /\bsince\b/.test(u)) return 'time';
+  if (anyOf(nw, 'station', 'stn', 'cast', 'profile', 'sta')) return 'station';
   if (/^(u|uo|ucur|u_?vel\w*|eastward\w*|east_?vel\w*|u_?comp\w*)$/.test(n)) return 'u';
   if (/^(v|vo|vcur|v_?vel\w*|northward\w*|north_?vel\w*|v_?comp\w*)$/.test(n)) return 'v';
   return 'scalar';
+}
+
+/** Demote roles the values contradict (e.g. a "lat" column holding 0-500) and tell the user. */
+function validateRoles(ds: Dataset): Dataset {
+  for (const v of ds.variables) {
+    if (v.min === undefined || v.max === undefined) continue;
+    const bad = (v.role === 'latitude' && (v.min < -90 || v.max > 90)) || (v.role === 'longitude' && (v.min < -180 || v.max > 360));
+    if (bad) { ds.warnings.push(`"${v.name}" looks like ${v.role} by name, but its values (${v.min} to ${v.max}) are out of range, so it was treated as a plain number.`); v.role = 'scalar'; }
+  }
+  return ds;
 }
 
 const FILLS = [-999, -9999, -99999, 9.96921e36, -9.99e-29, 1e35];
@@ -242,6 +264,7 @@ async function parse(req: Extract<WorkerRequest, { type: 'parse' }>) {
     ds = isCdf ? await parseNetcdf3(id, file, buf) : await parseH5(id, file, buf, ext.startsWith('nc') ? 'netcdf' : 'hdf5');
   } else throw new Error(`Unsupported file type ".${ext}". Supported: csv, esv, xlsx, json, cnv, nc, h5.`);
   progress(id, 'Detecting variables', 0.9);
+  ds = validateRoles(ds);
   const transfer = ds.variables.flatMap(v => (v.values ? [v.values.buffer as ArrayBuffer] : []));
   post({ type: 'dataset', id, dataset: ds }, transfer);
 }
