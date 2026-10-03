@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { Dataset } from '../types/dataset';
 import { adaptiveSample, boundedIDW, bounds, extractPoints } from '../engine/spatial';
 import { DEFAULT_CONFIG } from '../engine/capabilityEngine';
+import { colormap, cssColor as css } from '../engine/colormap';
 
 interface Props {
   dataset: Dataset;            // tabular CTD-style data (lat, lon, depth/pressure, scalar)
@@ -13,12 +14,6 @@ interface Props {
   height?: number;
 }
 
-const STOPS = [[0.267, 0.005, 0.329], [0.23, 0.322, 0.546], [0.128, 0.567, 0.551], [0.369, 0.789, 0.383], [0.993, 0.906, 0.144]];
-function colormap(t: number): [number, number, number] {
-  const s = Math.min(Math.max(t, 0), 1) * (STOPS.length - 1), i = Math.min(Math.floor(s), STOPS.length - 2), f = s - i;
-  return [0, 1, 2].map(k => STOPS[i][k] + (STOPS[i + 1][k] - STOPS[i][k]) * f) as [number, number, number];
-}
-const css = (t: number) => `rgb(${colormap(t).map(c => Math.round(c * 255)).join(',')})`;
 
 export default function VolumeField3D({ dataset, variable, radiusKm, gridSize = [36, 36, 24], height = 560 }: Props) {
   const host = useRef<HTMLDivElement>(null);

@@ -10,6 +10,8 @@ src/
   engine/capabilityEngine.ts  rule-based mode activator + 3D density gate
   workers/parser.worker.ts    CSV/ESV/XLSX/JSON/CNV/NetCDF3/NetCDF4+HDF5 parsing, role detection, lazy slicing
   components/VolumeField3D.tsx  3D volume with white observation points (three.js)
+  components/MapView.tsx        2D geographic view (polar/flat projection, pan/zoom, optional colouring)
+  engine/colormap.ts            shared colour scale
   components/DatasetViewer.tsx  drop-in component: parse + capability check + mode picker + views
 ```
 
@@ -43,6 +45,13 @@ worker.postMessage({ type: 'parse', id: crypto.randomUUID(), file });  // file f
 surveys are blocked rather than auto-stretched. Interpolated cells exist only inside that radius; measured
 points are drawn as white points at their exact coordinates. Vertical exaggeration only scales the display.
 All thresholds are in `CapabilityConfig`.
+
+## Column detection
+Roles are matched by whole words in the column name, long name and unit, so `Latitude`, `LAT`, `lat_deg`, `Lon_E`,
+`Depth_m`, `Pressure (dbar)`, `Elevation` and similar need no renaming. Values are sanity-checked (a "lat" column
+outside -90..90 is demoted with a warning). If a dataset has lat/lon but no depth/pressure/elevation, the viewer says so
+and offers the 2D map (polar stereographic for polar data) instead of a bare "3D unavailable". The "Detected columns"
+panel in `DatasetViewer` shows what was recognised.
 
 ## Assumptions to confirm
 - **ESV** is read as a delimited text table; **"CERT"** has no parser (the format was unclear, probably a typo).
