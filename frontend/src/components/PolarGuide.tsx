@@ -88,7 +88,7 @@ export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
 
   const handleSendMessage = async (message: string) => {
     if (!message.trim()) return;
-    addChatMessage('user', message);
+    addChatMessage('user', message, chatMode);
 
     // Immediate Thinking State
     (window as any).motionController?.play('THINKING');
@@ -129,7 +129,7 @@ export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
       replyData = getPolarFallback(message, chatMode);
     }
 
-    addChatMessage('assistant', replyData.reply);
+    addChatMessage('assistant', replyData.reply, chatMode);
 
     // 🚀 High Fidelity Facial Emotion & Body Animation
     const anim = replyData.animation || replyData.action || 'SPEAKING';
@@ -171,7 +171,7 @@ export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
         
         {/* Left Side Panel (Quiz mode) */}
         <div className="hidden lg:flex w-[400px] h-full relative z-30 pointer-events-auto p-6 pl-0 pt-0 flex-col">
-          {chatMode === 'kid' ? <ChatHistoryPanel /> : null}
+          {chatMode === 'kid' ? <ChatHistoryPanel chatMode="kid" /> : null}
         </div>
         
         {/* Chat Input (Bottom Center) */}
@@ -216,7 +216,7 @@ export const PolarGuide: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
         
         {/* Right Side Panel (Chat mode) */}
         <div className="hidden xl:flex w-[400px] h-full p-6 pr-0 pt-0 flex-col relative z-30 pointer-events-auto">
-          {chatMode !== 'kid' ? <ChatHistoryPanel /> : null}
+          {chatMode !== 'kid' ? <ChatHistoryPanel chatMode={chatMode} /> : null}
         </div>
       </div>
 

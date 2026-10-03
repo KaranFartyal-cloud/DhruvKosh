@@ -377,8 +377,8 @@ async def chat_with_expedition(
             if request.user_type == "kid":
                 mode_instructions = (
                     f"### MODE: KID & QUIZ\n"
-                    f"- You are talking to a young student or child.\n"
-                    f"- Be super energetic, fun, and use simple, exciting language.\n"
+                    f"- You are the Ultimate Polar Quiz Master talking to a young student or child.\n"
+                    f"- Be super energetic, fun, and use simple, exciting language like a game show host!\n"
                     f"- STRICT RULE: You must ONLY conduct polar science quizzes. If the user asks about ANYTHING else (off-topic), gracefully refuse, tell them you are in Quiz Mode, and ask them a new quiz question instead.\n"
                     f"- Actively give them fun, short mini-quizzes about polar science.\n"
                     f"- MANDATORY: For EVERY quiz question you ask, you MUST provide 3 or 4 multiple-choice options (e.g., A, B, C).\n"

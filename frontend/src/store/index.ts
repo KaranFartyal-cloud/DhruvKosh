@@ -15,6 +15,7 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   text: string;
   timestamp: Date;
+  mode?: string;
 }
 
 interface MascotState {
@@ -247,14 +248,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
   })),
   
   // Chat History actions
-  addChatMessage: (role: 'user' | 'assistant', text: string) => set((state) => ({
+  addChatMessage: (role: 'user' | 'assistant', text: string, mode?: string) => set((state) => ({
     mascot: {
       ...state.mascot,
       chatHistory: [...state.mascot.chatHistory, { 
         id: Date.now().toString(), 
         role, 
         text, 
-        timestamp: new Date() 
+        timestamp: new Date(),
+        mode
       }]
     }
   })),

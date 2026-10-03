@@ -72,13 +72,19 @@ function renderMarkdown(raw: string): React.ReactNode {
 // ─────────────────────────────────────────────────────────────
 //  Main Component
 // ─────────────────────────────────────────────────────────────
-export const ChatHistoryPanel: React.FC = () => {
+export const ChatHistoryPanel: React.FC<{ chatMode?: string }> = ({ chatMode = 'student' }) => {
   const { mascot } = useAppStore();
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Filter history based on current mode
+  // If a message has no mode (old messages), assume it's 'student' (normal chat)
+  const filteredHistory = mascot.chatHistory.filter(msg => 
+    (msg.mode || 'student') === chatMode
+  );
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [mascot.chatHistory]);
+  }, [filteredHistory]);
 
   return (
     <div className="flex flex-col h-full w-full relative">
@@ -102,7 +108,7 @@ export const ChatHistoryPanel: React.FC = () => {
         }}
       >
         <AnimatePresence initial={false}>
-          {mascot.chatHistory.map((msg) => (
+          {filteredHistory.map((msg) => (
             <motion.div
               key={msg.id}
               initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20, scale: 0.95 }}
