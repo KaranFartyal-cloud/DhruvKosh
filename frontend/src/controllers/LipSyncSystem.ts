@@ -51,7 +51,12 @@ export class LipSyncSystem {
       this.analyser.connect(this.audioCtx.destination);
       this.source.start(0);
       this.isPlaying = true;
-      this.source.onended = () => { this.isPlaying = false; };
+      this.source.onended = () => { 
+        this.isPlaying = false; 
+        if ((window as any).motionController) {
+          (window as any).motionController.play('IDLE');
+        }
+      };
     } catch (error) {
       console.error(" Audio Decode Error:", error);
       this.isPlaying = false;
