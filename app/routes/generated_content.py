@@ -351,7 +351,7 @@ async def chat_with_expedition(
         
         # FAST PATH: Skip heavy RAG for Kid mode (general quizzes don't need dataset abstracts)
         if request.user_type == "kid":
-            context = "Topics for quizzes: Northern Lights, Igloos, Emperor Penguins, Polar Bears, Icebergs, Glaciers, Walruses, Arctic Foxes, North Pole vs South Pole, Snowflakes. Pick a DIFFERENT topic every time. NEVER repeat a topic."
+            context = "Topics for quizzes: Northern Lights (Aurora), Igloos, Emperor Penguins, Polar Bears, Icebergs, Glaciers, Walruses, Arctic Foxes, North Pole vs South Pole, Snowflakes, Climate Change, Sea Ice, Seals, Whales, Eskimos, Midnight Sun, Polar Night, Tundra, Permafrost, Krill, Albatross, Shackleton, Amundsen, Huskies, Sled Dogs. Pick a DIFFERENT topic every time. NEVER repeat a topic."
         else:
             global EXP_CONTEXT_CACHE
             import time
@@ -381,9 +381,10 @@ async def chat_with_expedition(
                     f"- Be super energetic, fun, and use simple, exciting language.\n"
                     f"- STRICT RULE: You must ONLY conduct polar science quizzes. If the user asks about ANYTHING else (off-topic), gracefully refuse, tell them you are in Quiz Mode, and ask them a new quiz question instead.\n"
                     f"- Actively give them fun, short mini-quizzes about polar science.\n"
+                    f"- MANDATORY: For EVERY quiz question you ask, you MUST provide 3 or 4 multiple-choice options (e.g., A, B, C).\n"
                     f"- NEVER REPEAT THE SAME QUESTION. Pick a new, entirely different topic for every single quiz question.\n"
                     f"- IMPORTANT: Be lenient with their answers. If they answer 'King' for 'King Penguin', accept it as correct! Celebrate wildly if correct. If they get it completely wrong, encourage them.\n"
-                    f"- Keep your answers very short (1-2 sentences max).\n"
+                    f"- Keep your answers very short (1-3 sentences max).\n"
                 )
             elif request.user_type == "researcher":
                 mode_instructions = (
